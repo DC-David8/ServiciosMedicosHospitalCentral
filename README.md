@@ -107,7 +107,7 @@ Cada página se instala como app con su propio icono y pantalla de arranque: **H
 ├── tools/generar_iconos.py    Iconos y pantallas de arranque
 ├── tools/crear_servicio.py    Crea la página y el manifiesto de un servicio
 ├── tools/plantilla-servicio.html
-└── assets/                    Logo EMS, sello, escudos de facciones e iconos de app
+└── assets/                    Logo EMS, sello, escudos de facciones, iconos de app y fuente de la firma
 ```
 
 Sin servidor ni dependencias: HTML, CSS y JavaScript puros. Se publica con GitHub Pages (**Settings → Pages**, rama `main`, carpeta `/ (root)`).
@@ -118,7 +118,7 @@ Sin servidor ni dependencias: HTML, CSS y JavaScript puros. Se publica con GitHu
 - **Cargos del hospital:** `js/hospital.js` → `CARGOS`.
 - **Rangos de cada facción:** `js/app.js` → `RANGOS`.
 - **Servicios y áreas del portal:** `js/servicios.js`.
-- **Tipografías de los documentos:** Fraunces (títulos), Questrial (texto) y Pinyon Script (firma), de Google Fonts. Se cambian en `js/certificado.js` (`FUENTE_TITULO`, `FUENTE_TEXTO`, `FUENTE_FIRMA`).
+- **Tipografías de los documentos:** Fraunces (títulos) y Questrial (texto), de Google Fonts, y Pinyon Script (firma caligráfica), alojada en `assets/fuentes/` (licencia SIL OFL) para que la firma salga siempre aunque Google Fonts no cargue. Se cambian en `js/certificado.js` (`FUENTE_TITULO`, `FUENTE_TEXTO`, `FUENTE_FIRMA`).
 - **Colores de los documentos médicos:** `js/documento.js` → `DOC_COLORES`.
 - **Logo, sello y escudos:** reemplaza los PNG de `assets/` y `assets/facciones/` manteniendo el nombre, y vuelve a ejecutar `tools/generar_iconos.py`.
 

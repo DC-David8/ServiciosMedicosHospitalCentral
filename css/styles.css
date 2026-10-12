@@ -1,3 +1,6 @@
+/* Firma caligráfica: Pinyon Script (SIL OFL, assets/fuentes/OFL-PinyonScript.txt), alojada en el propio sitio */
+@font-face { font-family: "Pinyon Script"; src: url("../assets/fuentes/PinyonScript-Regular.woff") format("woff"); font-weight: 400; font-style: normal; font-display: swap; }
+
 /* Layout: cabecera institucional azul marino + columna única de formulario clínico, ancho 860px */
 :root {
   --bg: #EEF2F6;
