@@ -1,7 +1,7 @@
 {
-  "name": "Psicotécnico Hospital Central",
-  "short_name": "Psicotécnico",
-  "description": "Examen psicotécnico y certificado del Hospital Central para LSPD, LSSD y FBI.",
+  "name": "Servicios Médicos · Hospital Central",
+  "short_name": "Hospital Central",
+  "description": "Servicios médicos del Hospital Central: psicotécnico, parte de lesiones y medicina forense.",
   "lang": "es",
   "start_url": "./index.html",
   "scope": "./",

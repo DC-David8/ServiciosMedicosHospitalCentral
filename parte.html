@@ -40,7 +40,7 @@
       <span class="cabecera-org">Hospital Central · Urgencias</span>
       <h1>Parte de lesiones</h1>
     </div>
-    <a class="facciones-tag enlace-cab" href="index.html">Psicotécnico →</a>
+    <a class="facciones-tag enlace-cab" href="./">← Servicios</a>
   </div>
   <ol class="pasos pasos-2">
     <li data-paso="form" class="activo"><span>1</span>Asistencia</li>
@@ -58,11 +58,9 @@
     <form id="form-parte" novalidate>
       <fieldset class="bloque">
         <legend>Paciente</legend>
-        <div class="rejilla">
+        <div class="rejilla rejilla-3">
           <label class="campo campo-ancho"><span class="etiqueta">Nombre y apellidos</span>
             <input id="nombre" required autocomplete="off" placeholder="Nombre y apellidos del paciente"></label>
-          <label class="campo"><span class="etiqueta">DNI / ID</span>
-            <input id="dni" required autocomplete="off" placeholder="Documento de identidad"></label>
           <label class="campo"><span class="etiqueta">Fecha de nacimiento</span>
             <input id="nacimiento" type="date"></label>
           <label class="campo"><span class="etiqueta">Sexo</span>
@@ -162,9 +160,7 @@
           <div class="campo"><label class="etiqueta" for="cargo-sel">Cargo</label>
             <select id="cargo-sel" required></select>
             <input id="cargo" autocomplete="off" placeholder="Escribe el cargo" aria-label="Cargo (escrito a mano)" hidden></div>
-          <label class="campo"><span class="etiqueta">Nº de colegiado <small>(opcional)</small></span>
-            <input id="colegiado" autocomplete="off" placeholder="Número o ID"></label>
-          <label class="campo"><span class="etiqueta">Firma <small>(si la dejas vacía, se usa el nombre)</small></span>
+          <label class="campo campo-ancho"><span class="etiqueta">Firma <small>(si la dejas vacía, se usa el nombre)</small></span>
             <input id="firma" autocomplete="off" placeholder="Igual que el nombre"></label>
         </div>
       </fieldset>
@@ -188,11 +184,12 @@
   </section>
 </main>
 
-<footer class="pie">Hospital Central · Servicio de Urgencias · Uso exclusivo de rol · <a href="index.html">Psicotécnico</a></footer>
+<footer class="pie">Hospital Central · Servicio de Urgencias · Uso exclusivo de rol · <a href="./">Servicios médicos</a></footer>
 <!--/APP-->
 
 <script src="js/hospital.js"></script>
 <script src="js/certificado.js"></script>
+<script src="js/documento.js"></script>
 <script src="js/parte-cert.js"></script>
 <script src="js/pdf.js"></script>
 <script src="js/parte.js"></script>

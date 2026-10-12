@@ -1,13 +1,13 @@
 /*
  * Parte médico de lesiones del Hospital Central, dibujado en un <canvas>
  * de 1224 × 2016 px (proporción de papel Legal, 8,5 × 14 in).
- * Reutiliza las fuentes y utilidades de js/certificado.js.
+ * Usa la base común de js/documento.js (cabecera, pie, firma y utilidades).
  */
 
 const PARTE_COL = {
-  cab: "#16304B", cab2: "#0E2033", rojo: "#D7262E", rojoSuave: "#FBE9E7",
-  tinta: "#15191E", gris: "#5B6670", linea: "#D6DCE3", suave: "#F3F6FA",
-  cuerpo: "#E3E9F0", cuerpoBorde: "#8E9BA9", firma: "#1B2E6B",
+  ...DOC_COLORES,
+  rojo: "#D7262E", rojoSuave: "#FBE9E7",
+  cuerpo: "#E3E9F0", cuerpoBorde: "#8E9BA9",
 };
 
 /*
@@ -98,9 +98,6 @@ function dibujarFigura(ctx, ox, oy, k, vista) {
 }
 
 async function dibujarParte(canvas, d, recursos) {
-  const W = 1224, H = 2016, M = 72;
-  canvas.width = W; canvas.height = H;
-  const ctx = canvas.getContext("2d");
   const srcFac = d.hechos.faccion && recursos.facciones ? recursos.facciones[d.hechos.faccion] : null;
   const [logo, sello, escudo] = await Promise.all([
     cargarImagen(recursos.logo), cargarImagen(recursos.sello),
@@ -108,66 +105,24 @@ async function dibujarParte(canvas, d, recursos) {
   ]);
   await cargarFuentesCertificado();
 
-  const C = PARTE_COL;
-  const fuente = (px, peso, fam) => (ctx.font = `${peso} ${px}px ${fam}`);
-  const texto = (t, x, y, { px = 21, peso = "400", fam = FUENTE_TEXTO, color = C.tinta, align = "left", esp = 0, estilo = "" } = {}) => {
-    ctx.font = `${estilo} ${peso} ${px}px ${fam}`.trim();
-    ctx.fillStyle = color; ctx.textAlign = align;
-    if ("letterSpacing" in ctx) ctx.letterSpacing = esp ? `${esp}px` : "0px";
-    ctx.fillText(t, x, y);
-    if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
-    ctx.textAlign = "left";
-  };
-  const rect = (x, y, w, h, r, relleno, borde, g = 2) => {
-    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h);
-    if (relleno) { ctx.fillStyle = relleno; ctx.fill(); }
-    if (borde) { ctx.strokeStyle = borde; ctx.lineWidth = g; ctx.stroke(); }
-  };
-  const linea = (x1, y1, x2, y2, color, g = 2) => { ctx.strokeStyle = color; ctx.lineWidth = g; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); };
-  const titulo = (t, y) => { texto(t, M, y, { px: 18, peso: "700", color: C.cab, esp: 3.2 }); linea(M, y + 11, W - M, y + 11, C.rojo, 2); return y + 11; };
-  const imagen = (im, cx, cy, lado) => { if (!im) return; const k = lado / Math.max(im.width, im.height); ctx.drawImage(im, cx - im.width * k / 2, cy - im.height * k / 2, im.width * k, im.height * k); };
-  const parrafo = (t, x, y, ancho, { px = 20, lh = 30, max = 99, color = C.tinta, estilo = "" } = {}) => {
-    ctx.font = `${estilo} 400 ${px}px ${FUENTE_TEXTO}`.trim();
-    let r = partirTexto(ctx, t, ancho);
-    if (r.length > max) { r = r.slice(0, max); r[max - 1] = r[max - 1].replace(/\s+\S*$/, "") + "…"; }
-    r.forEach((l, i) => texto(l, x, y + i * lh, { px, color, estilo }));
-    return y + (r.length - 1) * lh;
-  };
-  const dato = (label, valor, x, y, w) => {
-    texto(label.toUpperCase(), x, y, { px: 14, peso: "700", color: C.gris, esp: 2 });
-    fuente(21, "400", FUENTE_TEXTO); let v = valor || "—";
-    while (ctx.measureText(v).width > w - 14 && v.length > 3) v = v.slice(0, -2) + "…";
-    texto(v, x, y + 30, { px: 21 });
-  };
-  const fechaHora = (iso) => { if (!iso) return "—"; const [f, h] = iso.split("T"); return `${fechaTexto(f)}${h ? " · " + h.slice(0, 5) : ""}`; };
+  const doc = crearDocumento(canvas, { colores: PARTE_COL });
+  const { ctx, W, H, M, C, fuente, texto, rect, linea, imagen, parrafo, titulo, dato } = doc;
+  const fechaHora = fechaHoraTexto;
 
-  // ── Fondo y cabecera ──
-  ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, W, H);
-  const g = ctx.createLinearGradient(0, 0, 0, 236); g.addColorStop(0, C.cab); g.addColorStop(1, C.cab2);
-  ctx.fillStyle = g; ctx.fillRect(0, 0, W, 236);
-  ctx.fillStyle = C.rojo; ctx.fillRect(0, 236, W, 10);
-  imagen(logo, M + 80, 118, 160);
-  const bx = W - M - 250, by = 54;
-  rect(bx, by, 250, 130, 12, "rgba(255,255,255,.08)", "rgba(255,255,255,.35)", 1.5);
-  texto("Nº DE PARTE", bx + 125, by + 34, { px: 13, peso: "700", color: "rgba(255,255,255,.7)", align: "center", esp: 2.5 });
-  texto(d.numero, bx + 125, by + 70, { px: 22, peso: "700", color: "#FFFFFF", align: "center", fam: FUENTE_TEXTO });
-  texto(fechaHora(d.fechaAsistencia), bx + 125, by + 104, { px: 18, color: "rgba(255,255,255,.85)", align: "center" });
-  const cx = (M + 176 + bx) / 2;
-  texto("HOSPITAL CENTRAL · SERVICIO DE URGENCIAS", cx, 84, { px: 15, peso: "700", color: "#F2A7AB", align: "center", esp: 3.5 });
-  let pxT = 50; fuente(pxT, PESO_TITULO, FUENTE_TITULO);
-  while (ctx.measureText("PARTE MÉDICO DE LESIONES").width > bx - (M + 196) - 30 && pxT > 30) { pxT--; fuente(pxT, PESO_TITULO, FUENTE_TITULO); }
-  texto("PARTE MÉDICO DE LESIONES", cx, 144, { px: pxT, peso: PESO_TITULO, fam: FUENTE_TITULO, color: "#FFFFFF", align: "center" });
-  texto("Informe médico-legal de asistencia sanitaria", cx, 184, { px: 18, color: "rgba(255,255,255,.8)", align: "center" });
+  doc.cabecera({
+    logo, org: "HOSPITAL CENTRAL · SERVICIO DE URGENCIAS", titulo: "PARTE MÉDICO DE LESIONES",
+    subtitulo: "Informe médico-legal de asistencia sanitaria", etiquetaNumero: "Nº DE PARTE",
+    numero: d.numero, fecha: fechaHora(d.fechaAsistencia),
+  });
 
   // ── Paciente ──
   let y = titulo("DATOS DEL PACIENTE", 292);
   fuente(36, PESO_TITULO, FUENTE_TITULO);
   texto(d.paciente.nombre || "—", M, y + 46, { px: 36, peso: PESO_TITULO, fam: FUENTE_TITULO });
-  const cw = (W - 2 * M) / 4;
-  dato("DNI / ID", d.paciente.dni, M, y + 82, cw);
-  dato("Nacimiento", d.paciente.nacimiento ? `${fechaTexto(d.paciente.nacimiento)}${d.paciente.edad != null ? ` (${d.paciente.edad} años)` : ""}` : "—", M + cw, y + 82, cw);
-  dato("Sexo", d.paciente.sexo === "F" ? "Femenino" : "Masculino", M + 2 * cw, y + 82, cw);
-  dato("Teléfono", d.paciente.telefono, M + 3 * cw, y + 82, cw);
+  const cw = (W - 2 * M) / 3;
+  dato("Nacimiento", d.paciente.nacimiento ? `${fechaTexto(d.paciente.nacimiento)}${d.paciente.edad != null ? ` (${d.paciente.edad} años)` : ""}` : "—", M, y + 82, cw);
+  dato("Sexo", d.paciente.sexo === "F" ? "Femenino" : "Masculino", M + cw, y + 82, cw);
+  dato("Teléfono", d.paciente.telefono, M + 2 * cw, y + 82, cw);
   y += 136;
 
   // ── Hechos ──
@@ -294,31 +249,15 @@ async function dibujarParte(canvas, d, recursos) {
   });
   y = byv + bh;
   texto("JUICIO CLÍNICO", M, y + 36, { px: 14, peso: "700", color: C.gris, esp: 2 });
-  const limite = H - 270;
+  const limite = doc.limiteContenido;
   const maxLin = Math.max(2, Math.floor((limite - (y + 64)) / 27) + 1);
   y = parrafo(v.juicio, M, y + 64, W - 2 * M, { px: 18, lh: 27, max: maxLin });
 
-  // ── Médico responsable ──
-  const sy = H - 178;
-  linea(M, sy - 84, W - M, sy - 84, C.linea, 1.5);
-  texto("FACULTATIVO RESPONSABLE", M, sy - 56, { px: 14, peso: "700", color: C.gris, esp: 2 });
-  if (d.medico.firma) {
-    const hay = !!document.fonts && [...document.fonts].some((f) => f.family.replace(/["']/g, "") === FAMILIA_FIRMA && f.status === "loaded");
-    ctx.font = hay ? `400 56px ${FUENTE_FIRMA}` : `italic 400 40px Georgia, serif`;
-    ctx.fillStyle = C.firma; ctx.fillText(d.medico.firma, M + 8, sy - 8);
-  }
-  linea(M, sy, M + 430, sy, C.tinta, 2);
-  texto(d.medico.nombre || "", M, sy + 30, { px: 20, peso: "700" });
-  texto([d.medico.cargo, d.medico.colegiado ? `Nº col. ${d.medico.colegiado}` : ""].filter(Boolean).join(" · "), M, sy + 56, { px: 18, color: C.gris });
-  texto("Emitido el", M + 520, sy - 20, { px: 16, color: C.gris });
-  texto(fechaTexto(d.fechaEmision), M + 520, sy + 10, { px: 24, peso: "700" });
-  ctx.globalAlpha = 0.92; imagen(sello, W - M - 112, sy - 18, 214); ctx.globalAlpha = 1;
-  texto("Se expide el presente parte a petición del interesado, para su presentación ante las autoridades competentes.", W / 2, H - 92, { px: 15, color: C.gris, align: "center" });
-
-  // ── Pie ──
-  ctx.fillStyle = C.rojo; ctx.fillRect(0, H - 66, W, 6);
-  ctx.fillStyle = C.cab; ctx.fillRect(0, H - 60, W, 60);
-  texto("HOSPITAL CENTRAL · DOCUMENTO MÉDICO-LEGAL", M - 8, H - 23, { px: 15, peso: "700", color: "#FFFFFF", esp: 3 });
-  texto(`REF. ${d.numero}`, W - M + 8, H - 23, { px: 15, color: "#FFFFFF", align: "right", esp: 2 });
+  // ── Facultativo y pie ──
+  doc.firma({
+    firma: d.medico.firma, nombre: d.medico.nombre, cargo: d.medico.cargo, fechaEmision: d.fechaEmision, sello,
+    nota: "Se expide el presente parte a petición del interesado, para su presentación ante las autoridades competentes.",
+  });
+  doc.pie({ referencia: d.numero });
   return canvas;
 }

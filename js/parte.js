@@ -1,6 +1,6 @@
 /*
  * Parte médico de lesiones — formulario, valoración automática y generación del documento.
- * Depende de: hospital.js, certificado.js (fuentes y utilidades), parte-cert.js, pdf.js.
+ * Depende de: hospital.js, certificado.js (fuentes), documento.js, parte-cert.js, pdf.js.
  */
 
 // Tipos de lesión y días de curación orientativos según gravedad [leve, moderada, grave]
@@ -195,7 +195,7 @@ const SINTOMAS = ["Ansiedad", "Miedo a la autoridad", "Insomnio", "Llanto / labi
       CARGOS.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("") + `<option value="${OTRO}">Otro (escribir a mano)</option>`;
     const ev = leer("psico-evaluador");
     if (ev) {
-      $("#medico").value = ev.evaluador || ""; $("#firma").value = ev.firma || ""; $("#colegiado").value = ev.colegiado || "";
+      $("#medico").value = ev.evaluador || ""; $("#firma").value = ev.firma || "";
       if (CARGOS.includes(ev.cargo)) $("#cargo-sel").value = ev.cargo;
       else if (ev.cargo) { $("#cargo-sel").value = OTRO; $("#cargo").value = ev.cargo; }
     }
@@ -207,7 +207,7 @@ const SINTOMAS = ["Ansiedad", "Miedo a la autoridad", "Insomnio", "Llanto / labi
 
   // ── Ejemplo ──
   function cargarEjemplo() {
-    $("#nombre").value = "Marcus Reyes"; $("#dni").value = "LS-48213"; $("#nacimiento").value = "1996-04-12"; $("#sexo").value = "M"; $("#telefono").value = "555-0142";
+    $("#nombre").value = "Marcus Reyes"; $("#nacimiento").value = "1996-04-12"; $("#sexo").value = "M"; $("#telefono").value = "555-0142";
     const h = new Date(); h.setHours(h.getHours() - 2); h.setMinutes(h.getMinutes() - h.getTimezoneOffset());
     $("#fecha-hechos").value = h.toISOString().slice(0, 16);
     $("#lugar").value = "Aparcamiento de Legion Square";
@@ -246,15 +246,11 @@ const SINTOMAS = ["Ansiedad", "Miedo a la autoridad", "Insomnio", "Llanto / labi
     if (b.getMonth() < a.getMonth() || (b.getMonth() === a.getMonth() && b.getDate() < a.getDate())) e--;
     return e >= 0 && e < 130 ? e : null;
   }
-  function numeroParte(fecha, dni) {
-    let hsh = 0; const s = `${dni}|${fecha}|${Date.now()}`;
-    for (const ch of s) hsh = (hsh * 31 + ch.charCodeAt(0)) >>> 0;
-    return `PML-${fecha.slice(0, 10).replace(/-/g, "")}-${String(hsh % 10000).padStart(4, "0")}`;
-  }
+  const numeroParte = (fecha, nombre) => numeroDocumento("PML", fecha, nombre);
 
   async function generar(e) {
     e.preventDefault();
-    const req = ["#nombre", "#dni", "#fecha-asistencia", "#medico", "#cargo-sel"];
+    const req = ["#nombre", "#fecha-asistencia", "#medico", "#cargo-sel"];
     const vacios = req.filter((s) => !$(s).value.trim());
     if ($("#cargo-sel").value === OTRO && !$("#cargo").value.trim()) vacios.push("#cargo");
     const sinContenido = !lesiones.some((l) => l.zona && l.tipo) && !(marcados("sintoma").length && radio("intensidad") !== "ninguna");
@@ -268,15 +264,15 @@ const SINTOMAS = ["Ansiedad", "Miedo a la autoridad", "Insomnio", "Llanto / labi
     $("#error-parte").hidden = true;
 
     const fa = $("#fecha-asistencia").value;
-    guardar("psico-evaluador", { ...(leer("psico-evaluador") || {}), evaluador: $("#medico").value.trim(), cargo: valorCargo(), firma: $("#firma").value.trim(), colegiado: $("#colegiado").value.trim() });
+    guardar("psico-evaluador", { ...(leer("psico-evaluador") || {}), evaluador: $("#medico").value.trim(), cargo: valorCargo(), firma: $("#firma").value.trim() });
     const agente = radio("agresor") === "agente";
     datosParte = {
-      numero: (datosParte && datosParte._clave === `${$("#dni").value}|${fa}`) ? datosParte.numero : numeroParte(fa, $("#dni").value),
-      _clave: `${$("#dni").value}|${fa}`,
+      numero: (datosParte && datosParte._clave === `${$("#nombre").value.trim()}|${fa}`) ? datosParte.numero : numeroParte(fa, $("#nombre").value.trim()),
+      _clave: `${$("#nombre").value.trim()}|${fa}`,
       fechaAsistencia: fa,
       fechaEmision: fa.slice(0, 10),
       paciente: {
-        nombre: $("#nombre").value.trim(), dni: $("#dni").value.trim(), nacimiento: $("#nacimiento").value,
+        nombre: $("#nombre").value.trim(), nacimiento: $("#nacimiento").value,
         edad: edad($("#nacimiento").value, fa), sexo: $("#sexo").value, telefono: $("#telefono").value.trim(),
       },
       hechos: {
@@ -289,7 +285,7 @@ const SINTOMAS = ["Ansiedad", "Miedo a la autoridad", "Insomnio", "Llanto / labi
       tratamiento: marcados("trat"),
       psico: { sintomas: radio("intensidad") === "ninguna" ? [] : marcados("sintoma"), intensidad: radio("intensidad"), seguimiento: $("#seguimiento").checked },
       valoracion: { dias: $("#dias").value, impeditivos: $("#impeditivos").value, pronostico: $("#pronostico").value, secuelas: $("#secuelas").value.trim() || "Sin secuelas previsibles", juicio: $("#juicio").value.trim() },
-      medico: { nombre: $("#medico").value.trim(), cargo: valorCargo(), colegiado: $("#colegiado").value.trim(), firma: $("#firma").value.trim() || $("#medico").value.trim() },
+      medico: { nombre: $("#medico").value.trim(), cargo: valorCargo(), firma: $("#firma").value.trim() || $("#medico").value.trim() },
     };
     irA("parte");
     $("#aviso-descarga").hidden = true;
@@ -306,7 +302,7 @@ const SINTOMAS = ["Ansiedad", "Miedo a la autoridad", "Insomnio", "Llanto / labi
   const nombreArchivo = () => `Parte_lesiones_${datosParte.paciente.nombre.replace(/\s+/g, "_").replace(/[^\w\-áéíóúñÁÉÍÓÚÑ]/g, "")}_${datosParte.numero}`;
   function descargar(blob, nombre) {
     descargarArchivo(blob, nombre);
-    if (window.MODO_VISTA_PREVIA) { $("#aviso-descarga").textContent = "Esta vista previa no permite descargar archivos. En GitHub Pages las descargas funcionan con normalidad."; $("#aviso-descarga").hidden = false; }
+    if (enVistaPrevia()) { $("#aviso-descarga").textContent = "Esta vista previa no permite descargar archivos. En GitHub Pages las descargas funcionan con normalidad."; $("#aviso-descarga").hidden = false; }
   }
 
   // ── Arranque ──

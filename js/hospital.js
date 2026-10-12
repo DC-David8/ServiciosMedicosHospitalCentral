@@ -37,3 +37,9 @@ function descargarArchivo(blob, nombre) {
   setTimeout(() => URL.revokeObjectURL(url), 4000);
   return "descargado";
 }
+
+// ¿La página está dentro de una vista previa (un marco) donde las descargas están bloqueadas?
+const enVistaPrevia = () => {
+  if (window.MODO_VISTA_PREVIA) return true;
+  try { return window.self !== window.top; } catch (e) { return true; }
+};

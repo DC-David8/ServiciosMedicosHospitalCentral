@@ -1,0 +1,32 @@
+{
+  "name": "Psicotécnico · Hospital Central",
+  "short_name": "Psicotécnico",
+  "description": "Examen psicotécnico y certificado del Hospital Central para LSPD, LSSD y FBI.",
+  "lang": "es",
+  "start_url": "./psicotecnico.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A1A2A",
+  "theme_color": "#16304B",
+  "icons": [
+    {
+      "src": "assets/app/icon-psico-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/app/icon-psico-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/app/icon-psico-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

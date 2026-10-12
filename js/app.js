@@ -320,7 +320,7 @@
 
   function descargar(blob, nombre) {
     descargarArchivo(blob, nombre);
-    if (window.MODO_VISTA_PREVIA) {
+    if (enVistaPrevia()) {
       $("#aviso-descarga").textContent = "Esta vista previa no permite descargar archivos. En GitHub Pages las descargas de PNG y PDF funcionan con normalidad.";
       $("#aviso-descarga").hidden = false;
     }
