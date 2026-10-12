@@ -49,6 +49,19 @@ Los umbrales se cambian en `js/evaluacion.js` → `CRITERIOS`.
 - **Apto (≥ 90 %)**: *La evaluada muestra un criterio excelente para el servicio. Destaca su templanza bajo presión, así como su integridad y apego al protocolo. Demuestra una actuación profesional sólida y fiable.*
 - **No apto**: *El evaluado muestra un criterio insuficiente para el servicio en este momento. Presenta respuestas incompatibles con el protocolo de actuación. Se recomienda reforzar el autocontrol y el uso proporcional de la fuerza antes de una nueva evaluación.*
 
+## Parte médico de lesiones
+
+`parte.html` (enlace **Parte de lesiones** en la cabecera) genera el parte que el Hospital Central entrega a un paciente agredido para que presente su denuncia.
+
+1. **Paciente:** nombre, DNI/ID, nacimiento (calcula la edad), sexo y teléfono.
+2. **Hechos que refiere:** fecha, lugar, presunto agresor (agente de la ley con facción e identificación, civil o desconocido), mecanismo y relato del paciente.
+3. **Exploración física:** hasta 8 lesiones con zona, tipo y gravedad. Se marcan numeradas sobre una figura frontal y posterior. Incluye pruebas y tratamiento aplicado.
+4. **Estado psicológico y daño moral:** síntomas, intensidad y recomendación de seguimiento psicológico.
+5. **Valoración médico-legal:** días de curación, días impeditivos y pronóstico se calculan solos (se pueden cambiar), y el juicio clínico se redacta automáticamente.
+6. **Facultativo:** nombre, cargo, nº de colegiado y firma (se recuerdan junto con los del psicotécnico).
+
+El parte se descarga en PNG o PDF. Los hechos se recogen *según manifiesta el paciente*: el parte certifica las lesiones y su compatibilidad con lo que se refiere, no quién las causó. Los días de curación por tipo de lesión se ajustan en `js/parte.js` → `TIPOS_LESION`.
+
 ## Acceso evaluadores
 
 En el pie de la web hay un enlace **Acceso evaluadores** (`admin.html`) protegido con contraseña. Muestra:
@@ -66,6 +79,7 @@ En el pie de la web hay un enlace **Acceso evaluadores** (`admin.html`) protegid
 Las dos páginas se pueden instalar como app:
 
 - **Psicotécnico** (`index.html`): icono del EMS.
+- **Parte médico** (`parte.html`): icono del EMS con un portapapeles médico.
 - **Evaluadores** (`admin.html`): icono del EMS con un candado dorado.
 
 Cada una tiene su manifiesto (`manifest.webmanifest`, `manifest-admin.webmanifest`), su icono de Apple y su pantalla de arranque para cada tamaño de iPhone (`assets/app/`). En iPhone: Safari → Compartir → **Añadir a pantalla de inicio**.
@@ -85,6 +99,10 @@ Desde la app instalada, los botones de descarga abren el menú Compartir para gu
 ├── js/pdf.js             Exportación a PDF sin librerías externas
 ├── js/app.js             Flujo de la aplicación
 ├── admin.html / js/admin.js  Acceso evaluadores (banco completo y glosario)
+├── parte.html            Parte médico de lesiones
+├── js/parte.js           Formulario y valoración del parte
+├── js/parte-cert.js      Dibujo del parte (figura corporal, secciones)
+├── js/hospital.js        Cargos del hospital y descargas, compartido
 ├── manifest*.webmanifest  Manifiestos de app web
 └── assets/               Logo EMS, sello oficial y escudos de las facciones (assets/facciones)
 ```

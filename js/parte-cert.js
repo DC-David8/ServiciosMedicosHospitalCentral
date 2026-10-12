@@ -1,0 +1,324 @@
+/*
+ * Parte médico de lesiones del Hospital Central, dibujado en un <canvas>
+ * de 1224 × 2016 px (proporción de papel Legal, 8,5 × 14 in).
+ * Reutiliza las fuentes y utilidades de js/certificado.js.
+ */
+
+const PARTE_COL = {
+  cab: "#16304B", cab2: "#0E2033", rojo: "#D7262E", rojoSuave: "#FBE9E7",
+  tinta: "#15191E", gris: "#5B6670", linea: "#D6DCE3", suave: "#F3F6FA",
+  cuerpo: "#E3E9F0", cuerpoBorde: "#8E9BA9", firma: "#1B2E6B",
+};
+
+/*
+ * Zonas anatómicas. Coordenadas sobre una figura de 150 × 340 px.
+ * Vista F = frontal, P = posterior. En la vista frontal el lado derecho del
+ * paciente queda a la izquierda del dibujo; en la posterior, a la derecha.
+ */
+const ZONAS_BASE = [
+  { id: "craneo", nombre: "Cabeza (cráneo)", v: "P", x: 75, y: 20 },
+  { id: "frente", nombre: "Frente", v: "F", x: 75, y: 13 },
+  { id: "ojo", nombre: "Ojo", v: "F", lado: true, x: 68, y: 22 },
+  { id: "pomulo", nombre: "Pómulo", v: "F", lado: true, x: 64, y: 31 },
+  { id: "nariz", nombre: "Nariz", v: "F", x: 75, y: 29 },
+  { id: "boca", nombre: "Boca / labios", v: "F", x: 75, y: 37 },
+  { id: "mandibula", nombre: "Mandíbula", v: "F", x: 75, y: 43 },
+  { id: "cuello", nombre: "Cuello", v: "F", x: 75, y: 51 },
+  { id: "nuca", nombre: "Nuca", v: "P", x: 75, y: 50 },
+  { id: "hombro", nombre: "Hombro", v: "F", lado: true, x: 44, y: 64 },
+  { id: "brazo", nombre: "Brazo", v: "F", lado: true, x: 35, y: 95 },
+  { id: "codo", nombre: "Codo", v: "P", lado: true, x: 30, y: 120 },
+  { id: "antebrazo", nombre: "Antebrazo", v: "F", lado: true, x: 26, y: 150 },
+  { id: "muneca", nombre: "Muñeca", v: "F", lado: true, x: 23, y: 175 },
+  { id: "mano", nombre: "Mano", v: "F", lado: true, x: 21, y: 191 },
+  { id: "torax", nombre: "Tórax", v: "F", x: 75, y: 88 },
+  { id: "costillas", nombre: "Costado / costillas", v: "F", lado: true, x: 52, y: 118 },
+  { id: "abdomen", nombre: "Abdomen", v: "F", x: 75, y: 140 },
+  { id: "espalda", nombre: "Espalda", v: "P", x: 75, y: 92 },
+  { id: "lumbar", nombre: "Zona lumbar", v: "P", x: 75, y: 148 },
+  { id: "gluteo", nombre: "Glúteo", v: "P", lado: true, x: 62, y: 180 },
+  { id: "muslo", nombre: "Muslo", v: "F", lado: true, x: 60, y: 210 },
+  { id: "rodilla", nombre: "Rodilla", v: "F", lado: true, x: 58, y: 252 },
+  { id: "pierna", nombre: "Pierna", v: "F", lado: true, x: 56, y: 288 },
+  { id: "tobillo", nombre: "Tobillo", v: "F", lado: true, x: 55, y: 316 },
+  { id: "pie", nombre: "Pie", v: "F", lado: true, x: 53, y: 330 },
+];
+
+// Expande las zonas con lado en "derecho" e "izquierdo"
+const ZONAS = (() => {
+  const out = [];
+  ZONAS_BASE.forEach((z) => {
+    if (!z.lado) { out.push({ id: z.id, nombre: z.nombre, v: z.v, x: z.x, y: z.y }); return; }
+    const femeninas = ["Mano", "Muñeca", "Rodilla", "Pierna"];
+    const adj = (base, d) => {
+      const f = femeninas.includes(base);
+      return d ? (f ? "derecha" : "derecho") : (f ? "izquierda" : "izquierdo");
+    };
+    // Derecho del paciente: en vista F queda a la izquierda del dibujo (x < 75); en P, a la derecha
+    const xDer = z.v === "F" ? z.x : 150 - z.x;
+    const xIzq = 150 - xDer;
+    out.push({ id: z.id + "_d", nombre: `${z.nombre} ${adj(z.nombre, true)}`, v: z.v, x: xDer, y: z.y });
+    out.push({ id: z.id + "_i", nombre: `${z.nombre} ${adj(z.nombre, false)}`, v: z.v, x: xIzq, y: z.y });
+  });
+  return out;
+})();
+const zonaPorId = (id) => ZONAS.find((z) => z.id === id);
+
+function dibujarFigura(ctx, ox, oy, k, vista) {
+  const X = (x) => ox + x * k, Y = (y) => oy + y * k;
+  const segs = [
+    [40, 64, 30, 120, 17], [30, 120, 22, 180, 14],
+    [110, 64, 120, 120, 17], [120, 120, 128, 180, 14],
+    [62, 168, 58, 252, 25], [58, 252, 55, 318, 18],
+    [88, 168, 92, 252, 25], [92, 252, 95, 318, 18],
+  ];
+  const torso = [[42, 56], [108, 56], [104, 110], [100, 150], [106, 178], [44, 178], [50, 150], [46, 110]];
+  const formas = (relleno, extra) => {
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    segs.forEach(([x1, y1, x2, y2, w]) => {
+      ctx.strokeStyle = relleno; ctx.lineWidth = w * k + extra;
+      ctx.beginPath(); ctx.moveTo(X(x1), Y(y1)); ctx.lineTo(X(x2), Y(y2)); ctx.stroke();
+    });
+    ctx.beginPath(); torso.forEach(([x, y], i) => (i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)))); ctx.closePath();
+    ctx.fillStyle = relleno; ctx.fill(); if (extra) { ctx.lineWidth = extra; ctx.strokeStyle = relleno; ctx.stroke(); }
+    ctx.fillRect(X(67) - extra / 2, Y(40), 16 * k + extra, 20 * k);
+    [[75, 24, 20, 20], [21, 191, 9, 10], [129, 191, 9, 10], [52, 330, 11, 7], [98, 330, 11, 7]].forEach(([x, y, rx, ry]) => {
+      ctx.beginPath(); ctx.ellipse(X(x), Y(y), rx * k + extra / 2, ry * k + extra / 2, 0, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.lineCap = "butt";
+  };
+  formas(PARTE_COL.cuerpoBorde, 3);
+  formas(PARTE_COL.cuerpo, 0);
+  // Detalles mínimos para distinguir las vistas
+  ctx.strokeStyle = PARTE_COL.cuerpoBorde; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  if (vista === "P") { ctx.moveTo(X(75), Y(62)); ctx.lineTo(X(75), Y(168)); }
+  else { ctx.moveTo(X(62), Y(84)); ctx.quadraticCurveTo(X(75), Y(92), X(88), Y(84)); ctx.moveTo(X(75), Y(132)); ctx.arc(X(75), Y(132), 1.5, 0, Math.PI * 2); }
+  ctx.stroke();
+}
+
+async function dibujarParte(canvas, d, recursos) {
+  const W = 1224, H = 2016, M = 72;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  const srcFac = d.hechos.faccion && recursos.facciones ? recursos.facciones[d.hechos.faccion] : null;
+  const [logo, sello, escudo] = await Promise.all([
+    cargarImagen(recursos.logo), cargarImagen(recursos.sello),
+    srcFac ? cargarImagen(srcFac).catch(() => null) : Promise.resolve(null),
+  ]);
+  await cargarFuentesCertificado();
+
+  const C = PARTE_COL;
+  const fuente = (px, peso, fam) => (ctx.font = `${peso} ${px}px ${fam}`);
+  const texto = (t, x, y, { px = 21, peso = "400", fam = FUENTE_TEXTO, color = C.tinta, align = "left", esp = 0, estilo = "" } = {}) => {
+    ctx.font = `${estilo} ${peso} ${px}px ${fam}`.trim();
+    ctx.fillStyle = color; ctx.textAlign = align;
+    if ("letterSpacing" in ctx) ctx.letterSpacing = esp ? `${esp}px` : "0px";
+    ctx.fillText(t, x, y);
+    if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+    ctx.textAlign = "left";
+  };
+  const rect = (x, y, w, h, r, relleno, borde, g = 2) => {
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h);
+    if (relleno) { ctx.fillStyle = relleno; ctx.fill(); }
+    if (borde) { ctx.strokeStyle = borde; ctx.lineWidth = g; ctx.stroke(); }
+  };
+  const linea = (x1, y1, x2, y2, color, g = 2) => { ctx.strokeStyle = color; ctx.lineWidth = g; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); };
+  const titulo = (t, y) => { texto(t, M, y, { px: 18, peso: "700", color: C.cab, esp: 3.2 }); linea(M, y + 11, W - M, y + 11, C.rojo, 2); return y + 11; };
+  const imagen = (im, cx, cy, lado) => { if (!im) return; const k = lado / Math.max(im.width, im.height); ctx.drawImage(im, cx - im.width * k / 2, cy - im.height * k / 2, im.width * k, im.height * k); };
+  const parrafo = (t, x, y, ancho, { px = 20, lh = 30, max = 99, color = C.tinta, estilo = "" } = {}) => {
+    ctx.font = `${estilo} 400 ${px}px ${FUENTE_TEXTO}`.trim();
+    let r = partirTexto(ctx, t, ancho);
+    if (r.length > max) { r = r.slice(0, max); r[max - 1] = r[max - 1].replace(/\s+\S*$/, "") + "…"; }
+    r.forEach((l, i) => texto(l, x, y + i * lh, { px, color, estilo }));
+    return y + (r.length - 1) * lh;
+  };
+  const dato = (label, valor, x, y, w) => {
+    texto(label.toUpperCase(), x, y, { px: 14, peso: "700", color: C.gris, esp: 2 });
+    fuente(21, "400", FUENTE_TEXTO); let v = valor || "—";
+    while (ctx.measureText(v).width > w - 14 && v.length > 3) v = v.slice(0, -2) + "…";
+    texto(v, x, y + 30, { px: 21 });
+  };
+  const fechaHora = (iso) => { if (!iso) return "—"; const [f, h] = iso.split("T"); return `${fechaTexto(f)}${h ? " · " + h.slice(0, 5) : ""}`; };
+
+  // ── Fondo y cabecera ──
+  ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, W, H);
+  const g = ctx.createLinearGradient(0, 0, 0, 236); g.addColorStop(0, C.cab); g.addColorStop(1, C.cab2);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, 236);
+  ctx.fillStyle = C.rojo; ctx.fillRect(0, 236, W, 10);
+  imagen(logo, M + 80, 118, 160);
+  const bx = W - M - 250, by = 54;
+  rect(bx, by, 250, 130, 12, "rgba(255,255,255,.08)", "rgba(255,255,255,.35)", 1.5);
+  texto("Nº DE PARTE", bx + 125, by + 34, { px: 13, peso: "700", color: "rgba(255,255,255,.7)", align: "center", esp: 2.5 });
+  texto(d.numero, bx + 125, by + 70, { px: 22, peso: "700", color: "#FFFFFF", align: "center", fam: FUENTE_TEXTO });
+  texto(fechaHora(d.fechaAsistencia), bx + 125, by + 104, { px: 18, color: "rgba(255,255,255,.85)", align: "center" });
+  const cx = (M + 176 + bx) / 2;
+  texto("HOSPITAL CENTRAL · SERVICIO DE URGENCIAS", cx, 84, { px: 15, peso: "700", color: "#F2A7AB", align: "center", esp: 3.5 });
+  let pxT = 50; fuente(pxT, PESO_TITULO, FUENTE_TITULO);
+  while (ctx.measureText("PARTE MÉDICO DE LESIONES").width > bx - (M + 196) - 30 && pxT > 30) { pxT--; fuente(pxT, PESO_TITULO, FUENTE_TITULO); }
+  texto("PARTE MÉDICO DE LESIONES", cx, 144, { px: pxT, peso: PESO_TITULO, fam: FUENTE_TITULO, color: "#FFFFFF", align: "center" });
+  texto("Informe médico-legal de asistencia sanitaria", cx, 184, { px: 18, color: "rgba(255,255,255,.8)", align: "center" });
+
+  // ── Paciente ──
+  let y = titulo("DATOS DEL PACIENTE", 292);
+  fuente(36, PESO_TITULO, FUENTE_TITULO);
+  texto(d.paciente.nombre || "—", M, y + 46, { px: 36, peso: PESO_TITULO, fam: FUENTE_TITULO });
+  const cw = (W - 2 * M) / 4;
+  dato("DNI / ID", d.paciente.dni, M, y + 82, cw);
+  dato("Nacimiento", d.paciente.nacimiento ? `${fechaTexto(d.paciente.nacimiento)}${d.paciente.edad != null ? ` (${d.paciente.edad} años)` : ""}` : "—", M + cw, y + 82, cw);
+  dato("Sexo", d.paciente.sexo === "F" ? "Femenino" : "Masculino", M + 2 * cw, y + 82, cw);
+  dato("Teléfono", d.paciente.telefono, M + 3 * cw, y + 82, cw);
+  y += 136;
+
+  // ── Hechos ──
+  y = titulo("HECHOS QUE REFIERE EL PACIENTE", y + 20);
+  const h = d.hechos;
+  texto("Fecha y hora:", M, y + 38, { px: 19, color: C.gris }); texto(fechaHora(h.fecha), M + 140, y + 38, { px: 20, peso: "700" });
+  texto("Lugar:", M + 470, y + 38, { px: 19, color: C.gris });
+  fuente(20, "400", FUENTE_TEXTO); let lugar = h.lugar || "—"; while (ctx.measureText(lugar).width > W - M - (M + 545) && lugar.length > 3) lugar = lugar.slice(0, -2) + "…";
+  texto(lugar, M + 545, y + 38, { px: 20, peso: "700" });
+  // Presunto agresor
+  const ay = y + 56, ah = 84;
+  rect(M, ay, W - 2 * M, ah, 10, C.suave, C.linea, 1.5);
+  let tx = M + 22;
+  if (escudo) { imagen(escudo, M + 54, ay + ah / 2, 64); tx = M + 104; }
+  texto("PRESUNTO AGRESOR (SEGÚN MANIFIESTA)", tx, ay + 30, { px: 13, peso: "700", color: C.gris, esp: 2 });
+  let agresor = h.tipoAgresor === "agente" ? "Agente de la ley" : h.tipoAgresor === "civil" ? "Civil" : "Desconocido";
+  if (h.tipoAgresor === "agente") agresor += h.faccion ? ` · ${h.faccion} (${FACCIONES[h.faccion]})` : " · Facción no identificada";
+  if (h.identificacion) agresor += ` · ${h.identificacion}`;
+  fuente(21, "700", FUENTE_TEXTO); while (ctx.measureText(agresor).width > W - M - tx - 20 && agresor.length > 3) agresor = agresor.slice(0, -2) + "…";
+  texto(agresor, tx, ay + 63, { px: 21, peso: "700" });
+  y = ay + ah;
+  if (h.mecanismos.length) { y = parrafo("Mecanismo referido: " + h.mecanismos.join(", ").toLowerCase() + ".", M, y + 34, W - 2 * M, { px: 19, max: 2, color: C.tinta }); }
+  if (h.relato) { y = parrafo("«" + h.relato.trim() + "»", M, y + 32, W - 2 * M, { px: 18, lh: 26, max: 3, color: "#33404C", estilo: "italic" }); }
+
+  // ── Exploración física ──
+  y = titulo("EXPLORACIÓN FÍSICA", y + 44);
+  const fy = y + 24, k = 0.86;
+  const fxF = M + 10, fxP = M + 170;
+  dibujarFigura(ctx, fxF, fy, k, "F"); dibujarFigura(ctx, fxP, fy, k, "P");
+  texto("FRONTAL", fxF + 75 * k, fy + 318, { px: 13, peso: "700", color: C.gris, align: "center", esp: 2 });
+  texto("POSTERIOR", fxP + 75 * k, fy + 318, { px: 13, peso: "700", color: C.gris, align: "center", esp: 2 });
+  texto("D", fxF + 2, fy + 12, { px: 14, peso: "700", color: C.gris }); texto("I", fxF + 124, fy + 12, { px: 14, peso: "700", color: C.gris });
+  texto("I", fxP + 2, fy + 12, { px: 14, peso: "700", color: C.gris }); texto("D", fxP + 124, fy + 12, { px: 14, peso: "700", color: C.gris });
+  // Marcadores (si dos caen en el mismo sitio, el segundo se aparta con una línea guía)
+  const puestos = [];
+  d.lesiones.forEach((l, i) => {
+    const z = l.zona; if (!z) return;
+    const ox0 = (z.v === "F" ? fxF : fxP) + z.x * k, oy0 = fy + z.y * k;
+    const fuera = z.x < 75 ? -1 : z.x > 75 ? 1 : (i % 2 ? 1 : -1);
+    const cand = [[0, 0], [fuera * 30, -10], [fuera * 30, 16], [fuera * 56, 0], [-fuera * 30, -10], [fuera * 56, 26], [fuera * 56, -26], [-fuera * 56, 0]];
+    let px = ox0, py = oy0;
+    for (const [dx, dy] of cand) {
+      const tx = ox0 + dx, ty = oy0 + dy;
+      if (puestos.every(([qx, qy]) => Math.hypot(qx - tx, qy - ty) >= 25)) { px = tx; py = ty; break; }
+    }
+    if (px !== ox0 || py !== oy0) {
+      linea(ox0, oy0, px, py, C.rojo, 1.5);
+      ctx.beginPath(); ctx.arc(ox0, oy0, 3, 0, Math.PI * 2); ctx.fillStyle = C.rojo; ctx.fill();
+    }
+    puestos.push([px, py]);
+    ctx.beginPath(); ctx.arc(px, py, 12, 0, Math.PI * 2); ctx.fillStyle = C.rojo; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = "#FFFFFF"; ctx.stroke();
+    texto(String(i + 1), px, py + 5, { px: 14, peso: "700", color: "#FFFFFF", align: "center" });
+  });
+  // Lista de lesiones
+  const lx = M + 340, lw = W - M - lx;
+  let ly = fy + 6;
+  if (!d.lesiones.length) {
+    texto("No se objetivan lesiones físicas.", lx, ly + 24, { px: 20, color: C.gris });
+  } else {
+    const conDesc = d.lesiones.length <= 4;
+    d.lesiones.forEach((l, i) => {
+      ctx.beginPath(); ctx.arc(lx + 13, ly + 13, 13, 0, Math.PI * 2); ctx.fillStyle = C.rojo; ctx.fill();
+      texto(String(i + 1), lx + 13, ly + 19, { px: 15, peso: "700", color: "#FFFFFF", align: "center" });
+      const grav = ["Leve", "Moderada", "Grave"][l.gravedad] || "";
+      let t1 = `${l.tipo} · ${l.zona ? l.zona.nombre : "—"}`;
+      fuente(20, "700", FUENTE_TEXTO); while (ctx.measureText(t1).width > lw - 160 && t1.length > 3) t1 = t1.slice(0, -2) + "…";
+      texto(t1, lx + 38, ly + 20, { px: 20, peso: "700" });
+      const colG = l.gravedad === 2 ? C.rojo : l.gravedad === 1 ? "#9A6200" : "#1E7F4F";
+      texto(grav.toUpperCase(), W - M, ly + 20, { px: 14, peso: "700", color: colG, align: "right", esp: 1.5 });
+      ly += 22;
+      if (conDesc && l.desc) { ly = parrafo(l.desc, lx + 38, ly + 24, lw - 40, { px: 17, lh: 23, max: 2, color: C.gris }) + 30; }
+      else ly += 18;
+    });
+  }
+  y = Math.max(fy + 326, ly);
+  const lineaLista = (lab, arr) => {
+    if (!arr.length) return;
+    texto(lab, M, y + 28, { px: 19, peso: "700" });
+    fuente(19, "700", FUENTE_TEXTO); const off = ctx.measureText(lab).width + 10;
+    y = parrafo(arr.join(", ") + ".", M + off, y + 28, W - 2 * M - off, { px: 19, lh: 27, max: 2 });
+  };
+  lineaLista("Pruebas complementarias:", d.pruebas);
+  lineaLista("Tratamiento aplicado:", d.tratamiento);
+
+  // ── Daños psicológicos y morales ──
+  y = titulo("ESTADO PSICOLÓGICO Y DAÑO MORAL", y + 46);
+  const p = d.psico;
+  if (!p.sintomas.length) {
+    texto("No refiere afectación psicológica.", M, y + 38, { px: 20, color: C.gris }); y += 38;
+  } else {
+    let px0 = M, py0 = y + 18;
+    fuente(17, "700", FUENTE_TEXTO);
+    p.sintomas.forEach((s) => {
+      const w = ctx.measureText(s).width + 30;
+      if (px0 + w > W - M) { px0 = M; py0 += 44; }
+      rect(px0, py0, w, 34, 17, C.rojoSuave, null);
+      texto(s, px0 + 15, py0 + 23, { px: 17, peso: "700", color: "#8E1F19" });
+      px0 += w + 10;
+    });
+    y = py0 + 34;
+    const intens = { leve: "Leve", moderada: "Moderada", grave: "Grave" }[p.intensidad] || "—";
+    texto(`Intensidad: ${intens}`, M, y + 32, { px: 19, peso: "700" });
+    if (p.seguimiento) { fuente(19, "700", FUENTE_TEXTO); texto("· Se recomienda seguimiento psicológico", M + ctx.measureText(`Intensidad: ${intens}`).width + 12, y + 32, { px: 19, color: C.tinta }); }
+    y += 32;
+  }
+
+  // ── Valoración médico-legal ──
+  y = titulo("VALORACIÓN MÉDICO-LEGAL", y + 46);
+  const v = d.valoracion;
+  const bw = (W - 2 * M - 3 * 16) / 4, byv = y + 18, bh = 82;
+  const cajas = [["PRONÓSTICO", v.pronostico], ["DÍAS DE CURACIÓN", v.dias != null && v.dias !== "" ? `${v.dias}` : "—"], ["DÍAS IMPEDITIVOS", v.impeditivos != null && v.impeditivos !== "" ? `${v.impeditivos}` : "—"], ["SECUELAS", v.secuelas || "—"]];
+  cajas.forEach(([lab, val], i) => {
+    const x = M + i * (bw + 16);
+    const destacado = i === 0;
+    rect(x, byv, bw, bh, 10, destacado ? C.cab : C.suave, destacado ? null : C.linea, 1.5);
+    texto(lab, x + 18, byv + 26, { px: 12, peso: "700", color: destacado ? "rgba(255,255,255,.75)" : C.gris, esp: 1.8 });
+    if (i === 3) { parrafo(val, x + 18, byv + 52, bw - 30, { px: 16, lh: 20, max: 2 }); }
+    else {
+      let px = i === 0 ? 28 : 34; fuente(px, PESO_TITULO, FUENTE_TITULO);
+      while (ctx.measureText(val).width > bw - 30 && px > 16) { px--; fuente(px, PESO_TITULO, FUENTE_TITULO); }
+      texto(val, x + 18, byv + 66, { px, peso: PESO_TITULO, fam: FUENTE_TITULO, color: destacado ? "#FFFFFF" : C.tinta });
+    }
+  });
+  y = byv + bh;
+  texto("JUICIO CLÍNICO", M, y + 36, { px: 14, peso: "700", color: C.gris, esp: 2 });
+  const limite = H - 270;
+  const maxLin = Math.max(2, Math.floor((limite - (y + 64)) / 27) + 1);
+  y = parrafo(v.juicio, M, y + 64, W - 2 * M, { px: 18, lh: 27, max: maxLin });
+
+  // ── Médico responsable ──
+  const sy = H - 178;
+  linea(M, sy - 84, W - M, sy - 84, C.linea, 1.5);
+  texto("FACULTATIVO RESPONSABLE", M, sy - 56, { px: 14, peso: "700", color: C.gris, esp: 2 });
+  if (d.medico.firma) {
+    const hay = !!document.fonts && [...document.fonts].some((f) => f.family.replace(/["']/g, "") === FAMILIA_FIRMA && f.status === "loaded");
+    ctx.font = hay ? `400 56px ${FUENTE_FIRMA}` : `italic 400 40px Georgia, serif`;
+    ctx.fillStyle = C.firma; ctx.fillText(d.medico.firma, M + 8, sy - 8);
+  }
+  linea(M, sy, M + 430, sy, C.tinta, 2);
+  texto(d.medico.nombre || "", M, sy + 30, { px: 20, peso: "700" });
+  texto([d.medico.cargo, d.medico.colegiado ? `Nº col. ${d.medico.colegiado}` : ""].filter(Boolean).join(" · "), M, sy + 56, { px: 18, color: C.gris });
+  texto("Emitido el", M + 520, sy - 20, { px: 16, color: C.gris });
+  texto(fechaTexto(d.fechaEmision), M + 520, sy + 10, { px: 24, peso: "700" });
+  ctx.globalAlpha = 0.92; imagen(sello, W - M - 112, sy - 18, 214); ctx.globalAlpha = 1;
+  texto("Se expide el presente parte a petición del interesado, para su presentación ante las autoridades competentes.", W / 2, H - 92, { px: 15, color: C.gris, align: "center" });
+
+  // ── Pie ──
+  ctx.fillStyle = C.rojo; ctx.fillRect(0, H - 66, W, 6);
+  ctx.fillStyle = C.cab; ctx.fillRect(0, H - 60, W, 60);
+  texto("HOSPITAL CENTRAL · DOCUMENTO MÉDICO-LEGAL", M - 8, H - 23, { px: 15, peso: "700", color: "#FFFFFF", esp: 3 });
+  texto(`REF. ${d.numero}`, W - M + 8, H - 23, { px: 15, color: "#FFFFFF", align: "right", esp: 2 });
+  return canvas;
+}

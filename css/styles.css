@@ -244,3 +244,44 @@ input[aria-invalid], select[aria-invalid] { border-color: var(--bad); background
   .filtros { grid-template-columns: minmax(0, 1fr); }
   .item-opciones .op { grid-template-columns: minmax(0, 1fr); gap: 6px; }
 }
+
+/* ── Parte médico de lesiones (parte.html) ── */
+.cabecera-parte { border-bottom-color: var(--ems); }
+.pasos-2 { grid-template-columns: repeat(2, 1fr); }
+.intro-parte { display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--line); border-left: 5px solid var(--ems); border-radius: var(--r); padding: 14px 18px; }
+.intro-parte p { margin: 0; flex: 1 1 360px; min-width: 0; color: var(--muted); font-size: 14px; }
+.intro-parte b { color: var(--ink); }
+.segmentos.tres { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.segmentos.cuatro { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.segmentos.tres span, .segmentos.cuatro span { font-family: var(--f-body); font-size: 14px; }
+.rejilla-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.campo-media { max-width: 320px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips label { position: relative; cursor: pointer; }
+.chips input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.chips span { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 6px 13px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-2); font-size: 14px; font-weight: 600; transition: background .12s, border-color .12s; }
+.chips span::before { content: "+"; font-weight: 700; color: var(--muted); }
+.chips label:hover span { border-color: var(--muted); }
+.chips input:checked + span { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.chips input:checked + span::before { content: "✓"; color: inherit; }
+.chips input:focus-visible + span { outline: 3px solid var(--accent-2); outline-offset: 2px; }
+.lista-lesiones { display: flex; flex-direction: column; gap: 10px; }
+.lesion { display: grid; grid-template-columns: 30px minmax(0, 1.3fr) minmax(0, 1.3fr) minmax(0, .8fr) 40px; grid-template-areas: "n z t g x" "n d d d x"; gap: 8px 10px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); }
+.lesion-num { grid-area: n; width: 28px; height: 28px; border-radius: 50%; background: var(--ems); color: #fff; display: grid; place-items: center; font: 700 13px/1 var(--f-mono); align-self: start; margin-top: 7px; }
+.lesion .l-zona { grid-area: z; } .lesion .l-tipo { grid-area: t; } .lesion .l-grav { grid-area: g; } .lesion .l-desc { grid-area: d; }
+.lesion select, .lesion input { background: var(--surface); }
+.btn-quitar { grid-area: x; width: 38px; height: 38px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; font-size: 15px; align-self: start; margin-top: 2px; }
+.btn-quitar:hover { color: var(--bad); border-color: var(--bad); }
+.fila-accion { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 4px; }
+.check { display: inline-flex; align-items: center; gap: 10px; font-weight: 600; font-size: 14px; cursor: pointer; }
+.check input { width: 20px; height: 20px; accent-color: var(--accent); }
+.bloque .titulo-fila .etiqueta { margin: 0; }
+@media (max-width: 720px) {
+  .rejilla-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lesion { grid-template-columns: 30px minmax(0, 1fr) 40px; grid-template-areas: "n z x" "n t x" "n g x" "n d x"; }
+  .segmentos.cuatro { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 460px) {
+  .segmentos.tres { grid-template-columns: minmax(0, 1fr); }
+  .campo-media { max-width: none; }
+}

@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Parte de lesiones · Hospital Central</title>
+<meta name="description" content="Generador de partes médicos de lesiones del Hospital Central (EMS).">
+<!-- App web (inicio en iPhone/Android) -->
+<link rel="manifest" href="manifest-parte.webmanifest">
+<meta name="theme-color" content="#16304B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Parte médico">
+<link rel="apple-touch-icon" href="assets/app/icon-parte-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/app/icon-parte-192.png">
+<link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/app/splash-parte-1320x2868.png">
+<link rel="apple-touch-startup-image" media="(device-width: 420px) and (device-height: 912px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/app/splash-parte-1260x2736.png">
+<link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/app/splash-parte-1206x2622.png">
+<link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/app/splash-parte-1290x2796.png">
+<link rel="apple-touch-startup-image" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/app/splash-parte-1179x2556.png">
+<link rel="apple-touch-startup-image" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/app/splash-parte-1284x2778.png">
+<link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/app/splash-parte-1170x2532.png">
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/app/splash-parte-1125x2436.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/app/splash-parte-1242x2688.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="assets/app/splash-parte-828x1792.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/app/splash-parte-1242x2208.png">
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="assets/app/splash-parte-750x1334.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&family=Fraunces:opsz,wght,SOFT,WONK@72,800,100,1&family=Questrial&family=Pinyon+Script&display=swap">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<!--APP-->
+<header class="cabecera cabecera-parte">
+  <div class="cabecera-in">
+    <img class="cabecera-logo" src="assets/logo-ems.png" alt="Logotipo EMS" width="56" height="56">
+    <div class="cabecera-txt">
+      <span class="cabecera-org">Hospital Central · Urgencias</span>
+      <h1>Parte de lesiones</h1>
+    </div>
+    <a class="facciones-tag enlace-cab" href="index.html">Psicotécnico →</a>
+  </div>
+  <ol class="pasos pasos-2">
+    <li data-paso="form" class="activo"><span>1</span>Asistencia</li>
+    <li data-paso="parte"><span>2</span>Parte médico</li>
+  </ol>
+</header>
+
+<main class="contenedor">
+  <section id="vista-form" class="vista">
+    <div class="intro-parte">
+      <p>Rellena la asistencia y genera el parte para entregarlo al paciente. Los hechos se recogen <b>según manifiesta el paciente</b>: el parte certifica las lesiones, no quién las causó.</p>
+      <button type="button" class="btn btn-sec btn-peq" id="btn-ejemplo">Cargar ejemplo</button>
+    </div>
+
+    <form id="form-parte" novalidate>
+      <fieldset class="bloque">
+        <legend>Paciente</legend>
+        <div class="rejilla">
+          <label class="campo campo-ancho"><span class="etiqueta">Nombre y apellidos</span>
+            <input id="nombre" required autocomplete="off" placeholder="Nombre y apellidos del paciente"></label>
+          <label class="campo"><span class="etiqueta">DNI / ID</span>
+            <input id="dni" required autocomplete="off" placeholder="Documento de identidad"></label>
+          <label class="campo"><span class="etiqueta">Fecha de nacimiento</span>
+            <input id="nacimiento" type="date"></label>
+          <label class="campo"><span class="etiqueta">Sexo</span>
+            <select id="sexo"><option value="M">Masculino</option><option value="F">Femenino</option></select></label>
+          <label class="campo"><span class="etiqueta">Teléfono <small>(opcional)</small></span>
+            <input id="telefono" autocomplete="off" inputmode="tel" placeholder="Número de contacto"></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="bloque">
+        <legend>Hechos que refiere</legend>
+        <div class="rejilla">
+          <label class="campo"><span class="etiqueta">Fecha y hora de los hechos</span>
+            <input id="fecha-hechos" type="datetime-local"></label>
+          <label class="campo"><span class="etiqueta">Lugar</span>
+            <input id="lugar" autocomplete="off" placeholder="Dónde ocurrió"></label>
+          <div class="campo campo-ancho">
+            <span class="etiqueta" id="lbl-agresor">Presunto agresor</span>
+            <div class="segmentos tres" role="radiogroup" aria-labelledby="lbl-agresor">
+              <label><input type="radio" name="agresor" id="ag-agente" value="agente" checked><span>Agente de la ley</span></label>
+              <label><input type="radio" name="agresor" id="ag-civil" value="civil"><span>Civil</span></label>
+              <label><input type="radio" name="agresor" id="ag-desc" value="desconocido"><span>Desconocido</span></label>
+            </div>
+          </div>
+          <div class="campo-ancho rejilla" id="bloque-faccion">
+            <label class="campo"><span class="etiqueta">Facción del agente</span>
+              <select id="faccion-ag"><option value="">No identificada</option><option value="LSPD">LSPD · Police Department</option><option value="LSSD">LSSD · Sheriff Department</option><option value="FBI">FBI · Federal Bureau</option></select></label>
+            <label class="campo"><span class="etiqueta">Identificación <small>(si la conoce)</small></span>
+              <input id="ident-ag" autocomplete="off" placeholder="Nombre, placa o descripción"></label>
+          </div>
+          <div class="campo campo-ancho">
+            <span class="etiqueta">Mecanismo que refiere</span>
+            <div class="chips" id="chips-mecanismo"></div>
+          </div>
+          <label class="campo campo-ancho"><span class="etiqueta">Relato del paciente</span>
+            <textarea id="relato" rows="3" maxlength="320" placeholder="Lo que cuenta el paciente, con sus palabras"></textarea></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="bloque">
+        <legend>Exploración física</legend>
+        <label class="campo campo-media"><span class="etiqueta">Fecha y hora de la asistencia</span>
+          <input id="fecha-asistencia" type="datetime-local" required></label>
+        <div class="campo">
+          <span class="etiqueta">Lesiones</span>
+          <div id="lista-lesiones" class="lista-lesiones"></div>
+          <div class="fila-accion">
+            <button type="button" class="btn btn-sec btn-peq" id="btn-anadir">+ Añadir lesión</button>
+            <p class="ayuda" id="ayuda-lesiones"></p>
+          </div>
+        </div>
+        <div class="campo"><span class="etiqueta">Pruebas complementarias</span><div class="chips" id="chips-prueba"></div></div>
+        <div class="campo"><span class="etiqueta">Tratamiento aplicado</span><div class="chips" id="chips-trat"></div></div>
+      </fieldset>
+
+      <fieldset class="bloque">
+        <legend>Estado psicológico y daño moral</legend>
+        <div class="campo"><span class="etiqueta">Síntomas que refiere o se observan</span><div class="chips" id="chips-sintoma"></div></div>
+        <div class="campo">
+          <span class="etiqueta" id="lbl-int">Intensidad</span>
+          <div class="segmentos cuatro" role="radiogroup" aria-labelledby="lbl-int">
+            <label><input type="radio" name="intensidad" id="int-ninguna" value="ninguna" checked><span>Sin afectación</span></label>
+            <label><input type="radio" name="intensidad" id="int-leve" value="leve"><span>Leve</span></label>
+            <label><input type="radio" name="intensidad" id="int-moderada" value="moderada"><span>Moderada</span></label>
+            <label><input type="radio" name="intensidad" id="int-grave" value="grave"><span>Grave</span></label>
+          </div>
+        </div>
+        <label class="check"><input type="checkbox" id="seguimiento"> Recomendar seguimiento psicológico</label>
+      </fieldset>
+
+      <fieldset class="bloque">
+        <legend>Valoración médico-legal</legend>
+        <p class="ayuda">Se calcula sola a partir de las lesiones y el tratamiento. Puedes cambiar cualquier valor.</p>
+        <div class="rejilla rejilla-4">
+          <label class="campo"><span class="etiqueta">Días de curación</span><input id="dias" type="number" min="0" max="365" inputmode="numeric"></label>
+          <label class="campo"><span class="etiqueta">Días impeditivos</span><input id="impeditivos" type="number" min="0" max="365" inputmode="numeric"></label>
+          <label class="campo"><span class="etiqueta">Pronóstico</span>
+            <select id="pronostico"><option>Leve</option><option>Menos grave</option><option>Grave</option><option>Reservado</option></select></label>
+          <label class="campo"><span class="etiqueta">Secuelas</span><input id="secuelas" autocomplete="off" value="Sin secuelas previsibles"></label>
+        </div>
+        <div class="campo">
+          <div class="titulo-fila">
+            <span class="etiqueta">Juicio clínico</span>
+            <button type="button" class="btn-texto" id="btn-recalcular">Volver al cálculo automático</button>
+          </div>
+          <textarea id="juicio" rows="6" maxlength="900"></textarea>
+          <p class="ayuda" id="ayuda-juicio"></p>
+          <p class="ayuda" id="auto-aviso" hidden>Has editado la valoración a mano; ya no se actualiza sola.</p>
+        </div>
+      </fieldset>
+
+      <fieldset class="bloque">
+        <legend>Facultativo responsable</legend>
+        <div class="rejilla">
+          <label class="campo"><span class="etiqueta">Nombre</span>
+            <input id="medico" required autocomplete="off" placeholder="Nombre y apellidos del facultativo"></label>
+          <div class="campo"><label class="etiqueta" for="cargo-sel">Cargo</label>
+            <select id="cargo-sel" required></select>
+            <input id="cargo" autocomplete="off" placeholder="Escribe el cargo" aria-label="Cargo (escrito a mano)" hidden></div>
+          <label class="campo"><span class="etiqueta">Nº de colegiado <small>(opcional)</small></span>
+            <input id="colegiado" autocomplete="off" placeholder="Número o ID"></label>
+          <label class="campo"><span class="etiqueta">Firma <small>(si la dejas vacía, se usa el nombre)</small></span>
+            <input id="firma" autocomplete="off" placeholder="Igual que el nombre"></label>
+        </div>
+      </fieldset>
+
+      <p class="error" id="error-parte" role="alert" tabindex="-1" hidden></p>
+      <div class="acciones">
+        <button type="submit" class="btn btn-primario">Generar parte médico</button>
+      </div>
+    </form>
+  </section>
+
+  <section id="vista-parte" class="vista" hidden>
+    <div class="acciones acciones-cert">
+      <button type="button" class="btn btn-primario" id="btn-png">Descargar PNG</button>
+      <button type="button" class="btn btn-primario" id="btn-pdf">Descargar PDF</button>
+      <button type="button" class="btn btn-sec" id="btn-editar">Editar datos</button>
+      <button type="button" class="btn btn-sec" id="btn-nuevo">Nuevo parte</button>
+    </div>
+    <p class="aviso" id="aviso-descarga" hidden></p>
+    <div class="hoja"><canvas id="lienzo" width="1224" height="2016" aria-label="Parte médico de lesiones"></canvas></div>
+  </section>
+</main>
+
+<footer class="pie">Hospital Central · Servicio de Urgencias · Uso exclusivo de rol · <a href="index.html">Psicotécnico</a></footer>
+<!--/APP-->
+
+<script src="js/hospital.js"></script>
+<script src="js/certificado.js"></script>
+<script src="js/parte-cert.js"></script>
+<script src="js/pdf.js"></script>
+<script src="js/parte.js"></script>
+</body>
+</html>
