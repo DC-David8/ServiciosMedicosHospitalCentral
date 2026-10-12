@@ -13,14 +13,6 @@ Herramientas web para el rol del Hospital Central en el servidor de FiveM **Jera
 
 Cada servicio tiene dos pestañas: **Documento** (formulario y generación) y **Protocolo IC** (los pasos registrados por el hospital, con cada comando `/me`, `/do`, `/e` o `/ems` listo para copiar). Los servicios que lo piden generan además el mensaje **/ems** ya relleno (anuncio de fallecimiento, aviso de salida de rescate).
 
-El portal (`index.html`) se dibuja a partir de `js/servicios.js`.
-
----|---|---|---|
-| Salud Mental y Evaluación Psicológica | Psicotécnico policial (LSPD, LSSD, FBI) | `psicotecnico.html` | Activo |
-| Urgencias | Parte médico de lesiones | `parte.html` | Activo |
-| Medicina Forense | Certificado de defunción | `defuncion.html` | Próximamente |
-| Medicina Forense | Informe de autopsia | `autopsia.html` | Próximamente |
-
 El portal (`index.html`) se dibuja a partir de `js/servicios.js`. Cambiar el estado de un servicio a `"activo"` lo hace aparecer como disponible.
 
 ---
@@ -68,7 +60,7 @@ Los hechos se recogen *según manifiesta el paciente*: el parte certifica las le
 
 Rescate, cirugía, ginecología y forense usan el mismo motor (`js/servicio.js` + `js/servicio-doc.js`). Cada uno se define en un esquema `js/servicios/<id>.js` con:
 
-- **Secciones y campos**: `texto`, `area`, `fecha`, `fechahora`, `hora`, `numero`, `select`, `segmentos`, `chips`, `check`, `imagen` (se adjunta al documento), `calculado`, `zonas` (hallazgos sobre la figura corporal) y `equipo` (personal de la operación). Con `si: (v) => …` un campo o sección solo aparece cuando aplica.
+- **Secciones y campos**: `texto`, `area`, `fecha`, `fechahora`, `hora`, `numero`, `select`, `segmentos`, `chips`, `check`, `imagen` (se adjunta al documento: se puede elegir un archivo, arrastrarlo o **pegar un recorte** con Ctrl + V, por ejemplo el DNI capturado con Win + Shift + S), `calculado`, `zonas` (hallazgos sobre la figura corporal) y `equipo` (personal de la operación). Con `si: (v) => …` un campo o sección solo aparece cuando aplica.
 - **Documentos**: uno o varios (forense genera dos con los mismos datos). Si el contenido no cabe, el documento pasa a una segunda página; el PDF las mantiene separadas y el PNG las une en una sola imagen.
 - **Resumen automático** (`resumen(v)`), **mensajes /ems** (`mensajes(v)`), **validación extra** (`validar(v)`) y **ejemplo** (`ejemplo`, botón *Cargar ejemplo*).
 

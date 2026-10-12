@@ -51,9 +51,16 @@
       case "check": return `<div class="campo${ancho}" ${attrs}><label class="check"><input type="checkbox" id="${id}"> ${esc(c.etiqueta)}</label>${ayuda}</div>`;
       case "calculado": return `<div class="campo${ancho}" ${attrs}><span class="etiqueta">${etiquetaHTML(c)}</span><output id="${id}" class="dato-fijo">—</output></div>`;
       case "imagen": return `<div class="campo${ancho}" ${attrs}><span class="etiqueta">${etiquetaHTML(c)}</span>
-        <div class="subir"><label class="btn btn-sec btn-peq subir-btn"><input type="file" accept="image/*" id="${id}" hidden>Elegir imagen</label>
-        <span class="ayuda subir-nombre" id="${id}-nombre">Sin imagen</span><button type="button" class="btn-texto" id="${id}-quitar" hidden>Quitar</button></div>
-        <img class="subir-vista" id="${id}-vista" alt="Vista previa" hidden>${ayuda}</div>`;
+        <div class="pegar" id="${id}-zona" data-imagen="${c.id}" tabindex="0" role="button" aria-label="${esc(c.etiqueta)}: pega aquí el recorte con Ctrl + V o arrastra una imagen">
+          <img class="pegar-vista" id="${id}-vista" alt="Imagen adjunta" hidden>
+          <span class="pegar-txt" id="${id}-txt"><b>Pega aquí el recorte</b><span>Haz clic en este recuadro y pulsa <kbd>Ctrl</kbd> + <kbd>V</kbd> (recorte con <kbd>Win</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd>) o arrastra una imagen</span></span>
+        </div>
+        <div class="subir">
+          <label class="btn btn-sec btn-peq subir-btn"><input type="file" accept="image/*" id="${id}" hidden>Elegir archivo</label>
+          <button type="button" class="btn btn-sec btn-peq" data-pegar="${c.id}">Pegar del portapapeles</button>
+          <button type="button" class="btn-texto" id="${id}-quitar" hidden>Quitar imagen</button>
+          <span class="ayuda subir-nombre" id="${id}-nombre" aria-live="polite"></span>
+        </div>${ayuda}</div>`;
       case "zonas": return `<div class="campo${ancho}" ${attrs}><span class="etiqueta">${etiquetaHTML(c)}</span><div class="lista-lesiones" id="lista-${c.id}"></div>
         <div class="fila-accion"><button type="button" class="btn btn-sec btn-peq" data-anadir="${c.id}">+ Añadir hallazgo</button>${ayuda}</div></div>`;
       case "equipo": return `<div class="campo${ancho}" ${attrs}><span class="etiqueta">${etiquetaHTML(c)}</span><div class="lista-equipo" id="lista-${c.id}"></div>
@@ -121,6 +128,59 @@
         </div>`).join("");
     }
     const b = document.querySelector(`[data-anadir="${id}"]`); if (b) b.disabled = l.length >= (c.maximo || 8);
+  }
+
+  // ── Imágenes: archivo, recorte pegado (Ctrl + V) o arrastrado ──
+  let ultimaZona = null; // último recuadro de imagen en el que se hizo clic
+  function asignarImagen(id, blob, origen) {
+    if (!blob || !/^image\//.test(blob.type)) { avisoImagen(id, "Eso no es una imagen. Copia un recorte o elige un archivo de imagen."); return; }
+    const lector = new FileReader();
+    lector.onload = () => {
+      imagenes[id] = lector.result;
+      $(`#f-${id}-vista`).src = lector.result; $(`#f-${id}-vista`).hidden = false;
+      $(`#f-${id}-txt`).hidden = true;
+      $(`#f-${id}-zona`).classList.add("con-imagen");
+      $(`#f-${id}-quitar`).hidden = false;
+      avisoImagen(id, origen, true);
+    };
+    lector.readAsDataURL(blob);
+  }
+  function quitarImagen(id) {
+    delete imagenes[id];
+    $(`#f-${id}`).value = ""; $(`#f-${id}-vista`).hidden = true; $(`#f-${id}-vista`).removeAttribute("src");
+    $(`#f-${id}-txt`).hidden = false; $(`#f-${id}-zona`).classList.remove("con-imagen");
+    $(`#f-${id}-quitar`).hidden = true; avisoImagen(id, "");
+  }
+  function avisoImagen(id, texto, ok) {
+    const el = $(`#f-${id}-nombre`); if (!el) return;
+    el.textContent = texto; el.style.color = ok ? "var(--ok)" : texto ? "var(--warn)" : "";
+  }
+  const imagenDelPortapapeles = (dt) => {
+    if (!dt) return null;
+    for (const it of dt.items || []) if (it.kind === "file" && it.type.startsWith("image/")) return it.getAsFile();
+    for (const f of dt.files || []) if (f.type.startsWith("image/")) return f;
+    return null;
+  };
+  // A qué campo va un recorte pegado: el recuadro enfocado, el último usado o el primero visible
+  function campoImagenDestino(target) {
+    const zona = target && target.closest && target.closest("[data-imagen]");
+    if (zona) return zona.dataset.imagen;
+    if (ultimaZona && !document.querySelector(`[data-campo="${ultimaZona}"]`).hidden) return ultimaZona;
+    const visibles = campos().filter((c) => c.tipo === "imagen" && !document.querySelector(`[data-campo="${c.id}"]`).hidden);
+    return (visibles.find((c) => !imagenes[c.id]) || visibles[0] || {}).id || null;
+  }
+  async function pegarDesdePortapapeles(id) {
+    try {
+      const items = await navigator.clipboard.read();
+      for (const it of items) {
+        const tipo = it.types.find((t) => t.startsWith("image/"));
+        if (tipo) { asignarImagen(id, await it.getType(tipo), "Recorte pegado"); return; }
+      }
+      avisoImagen(id, "No hay ninguna imagen en el portapapeles. Haz el recorte con Win + Shift + S y vuelve a intentarlo.");
+    } catch (err) {
+      avisoImagen(id, "El navegador no dejó leer el portapapeles. Haz clic en el recuadro y pulsa Ctrl + V.");
+      $(`#f-${id}-zona`).focus();
+    }
   }
 
   // ── Lectura y escritura de valores ──
@@ -295,14 +355,8 @@
     if (fila) { const l = listas[fila.dataset.lista][Number(fila.dataset.i)]; const k = e.target.dataset.k; l[k] = e.target.type === "checkbox" ? e.target.checked : e.target.value; }
     if (e.target.id === "cargo-sel") { $("#cargo").hidden = e.target.value !== OTRO; if (!$("#cargo").hidden) $("#cargo").focus(); }
     if (e.target.type === "file") {
-      const id = e.target.id.slice(2), f = e.target.files[0]; if (!f) return;
-      const lector = new FileReader();
-      lector.onload = () => {
-        imagenes[id] = lector.result;
-        $(`#f-${id}-vista`).src = lector.result; $(`#f-${id}-vista`).hidden = false;
-        $(`#f-${id}-nombre`).textContent = f.name; $(`#f-${id}-quitar`).hidden = false;
-      };
-      lector.readAsDataURL(f);
+      const id = e.target.id.slice(2), f = e.target.files[0];
+      if (f) asignarImagen(id, f, f.name);
     }
     actualizar();
   });
@@ -312,14 +366,38 @@
     const q = e.target.closest(".btn-quitar");
     if (q) { const f = q.closest("[data-lista]"); listas[f.dataset.lista].splice(Number(f.dataset.i), 1); pintarLista(f.dataset.lista); actualizar(); return; }
     const quitarImg = e.target.closest('[id$="-quitar"]');
-    if (quitarImg && quitarImg.id.startsWith("f-")) {
-      const id = quitarImg.id.slice(2, -7); delete imagenes[id];
-      $(`#f-${id}`).value = ""; $(`#f-${id}-vista`).hidden = true; $(`#f-${id}-nombre`).textContent = "Sin imagen"; quitarImg.hidden = true; return;
-    }
+    if (quitarImg && quitarImg.id.startsWith("f-")) { quitarImagen(quitarImg.id.slice(2, -7)); return; }
+    const pegarBtn = e.target.closest("[data-pegar]");
+    if (pegarBtn) { ultimaZona = pegarBtn.dataset.pegar; pegarDesdePortapapeles(pegarBtn.dataset.pegar); return; }
+    const zona = e.target.closest("[data-imagen]");
+    if (zona) { ultimaZona = zona.dataset.imagen; zona.focus(); return; }
     if (e.target.id === "btn-regenerar") { conclusionEditada = false; actualizar(); return; }
     const cp = e.target.closest(".pc-copiar"); if (cp) copiarTexto(cp.dataset.texto, cp);
   });
   $("#form-servicio").addEventListener("submit", generar);
+  document.addEventListener("paste", (e) => {
+    if ($("#vista-form").hidden) return;
+    const img = imagenDelPortapapeles(e.clipboardData);
+    if (!img) return; // texto normal: se pega como siempre
+    const id = campoImagenDestino(e.target);
+    if (!id) return;
+    e.preventDefault();
+    asignarImagen(id, img, "Recorte pegado");
+  });
+  $("#form-servicio").addEventListener("focusin", (e) => { const z = e.target.closest("[data-imagen]"); if (z) ultimaZona = z.dataset.imagen; });
+  $("#form-servicio").addEventListener("keydown", (e) => {
+    const z = e.target.closest("[data-imagen]");
+    if (z && (e.key === "Delete" || e.key === "Backspace") && imagenes[z.dataset.imagen]) { e.preventDefault(); quitarImagen(z.dataset.imagen); }
+  });
+  ["dragenter", "dragover"].forEach((t) => $("#form-servicio").addEventListener(t, (e) => {
+    const z = e.target.closest("[data-imagen]"); if (!z) return;
+    e.preventDefault(); z.classList.add("arrastrando");
+  }));
+  ["dragleave", "drop"].forEach((t) => $("#form-servicio").addEventListener(t, (e) => {
+    const z = e.target.closest("[data-imagen]"); if (!z) return;
+    z.classList.remove("arrastrando");
+    if (t === "drop") { e.preventDefault(); const f = imagenDelPortapapeles(e.dataTransfer); if (f) asignarImagen(z.dataset.imagen, f, f.name || "Imagen arrastrada"); }
+  }));
   $("#mensajes-doc").addEventListener("click", (e) => { const cp = e.target.closest(".pc-copiar"); if (cp) copiarTexto(cp.dataset.texto, cp); });
   $("#btn-ejemplo").addEventListener("click", () => {
     Object.entries(S.ejemplo || {}).forEach(([k, val]) => escribir(k, val));
@@ -334,8 +412,7 @@
   $("#btn-editar").addEventListener("click", () => irA("form"));
   $("#btn-nuevo").addEventListener("click", () => {
     $("#form-servicio").reset();
-    Object.keys(imagenes).forEach((k) => delete imagenes[k]);
-    $$(".subir-vista").forEach((i) => (i.hidden = true)); $$(".subir-nombre").forEach((s) => (s.textContent = "Sin imagen"));
+    campos().filter((c) => c.tipo === "imagen").forEach((c) => quitarImagen(c.id));
     conclusionEditada = false; datos = null;
     valoresIniciales(); iniciarFacultativo(); actualizar(); irA("form");
   });

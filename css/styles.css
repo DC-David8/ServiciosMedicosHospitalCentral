@@ -321,7 +321,15 @@ a.servicio:focus-visible { outline: 3px solid var(--accent-2); outline-offset: 2
 .hojas { display: flex; flex-direction: column; gap: 16px; }
 .subir { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .subir-btn { cursor: pointer; display: inline-flex; align-items: center; }
-.subir-vista { max-width: 100%; max-height: 220px; border-radius: 8px; border: 1px solid var(--line); object-fit: contain; align-self: flex-start; background: var(--surface-2); }
+.pegar { display: grid; place-items: center; min-height: 120px; padding: 14px; border: 2px dashed var(--line); border-radius: 10px; background: var(--surface-2); cursor: pointer; text-align: center; transition: border-color .12s, background .12s; }
+.pegar:hover { border-color: var(--muted); }
+.pegar:focus-visible, .pegar:focus { outline: none; border-color: var(--accent-2); border-style: solid; background: var(--surface); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-2) 25%, transparent); }
+.pegar.arrastrando { border-color: var(--accent-2); background: var(--surface); }
+.pegar.con-imagen { border-style: solid; min-height: 0; padding: 8px; }
+.pegar-txt { display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 13px; max-width: 46ch; }
+.pegar-txt b { color: var(--ink); font-size: 15px; }
+.pegar-txt kbd { font: 600 11px/1 var(--f-mono); padding: 2px 5px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; background: var(--surface); color: var(--ink); }
+.pegar-vista { max-width: 100%; max-height: 260px; border-radius: 6px; object-fit: contain; }
 .lesion.lesion-3 { grid-template-columns: 30px minmax(0, 1.2fr) minmax(0, 1.2fr) 40px; grid-template-areas: "n z t x" "n d d x"; }
 .lesion-3 [data-k="zona"] { grid-area: z; } .lesion-3 [data-k="tipo"] { grid-area: t; } .lesion-3 [data-k="desc"] { grid-area: d; }
 .lista-equipo { display: flex; flex-direction: column; gap: 10px; }
