@@ -47,7 +47,18 @@ async function dibujarServicio(servicio, docDef, v, recursos) {
     const contenido = [];
     let fila = [];
     const cerrarFila = () => { if (fila.length) { contenido.push({ tipo: "fila", campos: fila }); fila = []; } };
+    // Imagen «lateral» (p. ej. el DNI): va a la derecha del nombre y los datos cortos de la sección
+    const lat = campos.find((c) => c.tipo === "imagen" && c.lateral && imagenes[c.id]);
+    const ficha = lat ? { tipo: "ficha", c: lat, im: imagenes[lat.id], titular: "", datos: [] } : null;
     for (const c of campos) {
+      if (ficha && c === lat) continue;
+      if (ficha && (c.doc === "titular" || (GRUPO_CORTO.includes(c.tipo) && c.doc !== "ancho"))) {
+        const t = textoCampo(c, v); if (!t) continue;
+        if (c.doc === "titular") ficha.titular = t;
+        else if (t.length > 34) { cerrarFila(); contenido.push({ tipo: "ancho", c, t }); }
+        else ficha.datos.push({ c, t });
+        continue;
+      }
       if (c.tipo === "zonas") { cerrarFila(); const l = (v[c.id] || []).filter((z) => z.zona && z.tipo); if (l.length) contenido.push({ tipo: "zonas", c, lista: l }); continue; }
       if (c.tipo === "equipo") { cerrarFila(); const l = (v[c.id] || []).filter((m) => m.nombre); if (l.length) contenido.push({ tipo: "equipo", c, lista: l }); continue; }
       if (c.tipo === "imagen") { cerrarFila(); if (imagenes[c.id]) contenido.push({ tipo: "imagen", c, im: imagenes[c.id] }); continue; }
@@ -60,11 +71,25 @@ async function dibujarServicio(servicio, docDef, v, recursos) {
       fila.push({ c, t }); if (fila.length === 3) cerrarFila();
     }
     cerrarFila();
+    if (ficha) contenido.unshift(ficha);
     if (!contenido.length) continue;
 
     anadir({ alto: 58, titulo: true, dibujar: (doc, y) => doc.titulo((s.tituloDoc || s.titulo).toUpperCase(), y + 30) });
     for (const k of contenido) {
-      if (k.tipo === "titular") anadir({ alto: 54, dibujar: (doc, y) => doc.texto(doc.recortar(k.t, ANCHO, 36, PESO_TITULO, FUENTE_TITULO), M, y + 38, { px: 36, peso: PESO_TITULO, fam: FUENTE_TITULO }) });
+      if (k.tipo === "ficha") {
+        const esc = Math.min(300 / k.im.width, 176 / k.im.height, 2);
+        const iw = Math.round(k.im.width * esc), ih = Math.round(k.im.height * esc);
+        const ix = W - M - iw, lw = ix - 30 - M, cw = lw / 2;
+        const top = k.titular ? 54 : 0, filas = Math.ceil(k.datos.length / 2);
+        anadir({ alto: Math.max(top + filas * 64, ih + 46), dibujar: (doc, y) => {
+          doc.rect(ix - 1, y + 11, iw + 2, ih + 2, 8, null, colores.linea, 1.5);
+          doc.ctx.save(); doc.ctx.beginPath(); doc.ctx.roundRect ? doc.ctx.roundRect(ix, y + 12, iw, ih, 7) : doc.ctx.rect(ix, y + 12, iw, ih); doc.ctx.clip();
+          doc.ctx.drawImage(k.im, ix, y + 12, iw, ih); doc.ctx.restore();
+          doc.texto((k.c.pieDoc || k.c.etiquetaDoc || k.c.etiqueta).toUpperCase(), ix + iw / 2, y + ih + 34, { px: 12, peso: "700", color: colores.gris, align: "center", esp: 1.5 });
+          if (k.titular) doc.texto(doc.recortar(k.titular, lw, 36, PESO_TITULO, FUENTE_TITULO), M, y + 38, { px: 36, peso: PESO_TITULO, fam: FUENTE_TITULO });
+          k.datos.forEach((f, i) => doc.dato(f.c.etiquetaDoc || f.c.etiqueta, f.t, M + (i % 2) * cw, y + top + 18 + Math.floor(i / 2) * 64, cw));
+        } });
+      } else if (k.tipo === "titular") anadir({ alto: 54, dibujar: (doc, y) => doc.texto(doc.recortar(k.t, ANCHO, 36, PESO_TITULO, FUENTE_TITULO), M, y + 38, { px: 36, peso: PESO_TITULO, fam: FUENTE_TITULO }) });
       else if (k.tipo === "fila") {
         const cw = ANCHO / 3;
         anadir({ alto: 64, dibujar: (doc, y) => k.campos.forEach((f, i) => doc.dato(f.c.etiquetaDoc || f.c.etiqueta, f.t, M + i * cw, y + 18, cw)) });
@@ -115,7 +140,8 @@ async function dibujarServicio(servicio, docDef, v, recursos) {
       } else if (k.tipo === "zonas") {
         const k2 = 0.86, conDesc = k.lista.length <= 6;
         const listaH = k.lista.reduce((s2, z) => s2 + (conDesc && z.desc ? 78 : 44), 0);
-        anadir({ alto: Math.max(340, listaH + 20), dibujar: (doc, y) => dibujarZonas(doc, k.lista, y + 8, k2, conDesc, colores) });
+        const marca = k.c.destacar && k.lista.some((z) => z.destacado) ? k.c.destacar : null;
+        anadir({ alto: Math.max(marca ? 372 : 340, listaH + 20), dibujar: (doc, y) => dibujarZonas(doc, k.lista, y + 8, k2, conDesc, colores, marca) });
       }
     }
   }
@@ -165,32 +191,64 @@ async function dibujarServicio(servicio, docDef, v, recursos) {
   });
 }
 
-/** Figura frontal y posterior con marcadores numerados y lista de hallazgos a la derecha. */
-function dibujarZonas(doc, lista, fy, k, conDesc, colores) {
+/**
+ * Figura frontal y posterior con marcadores numerados y lista de hallazgos a la derecha.
+ * marca = { etiqueta, doc } resalta en rojo los hallazgos con «destacado» (p. ej. lesiones mortales).
+ */
+function dibujarZonas(doc, lista, fy, k, conDesc, colores, marca) {
   const { ctx, M, W } = doc;
+  const ROJO = colores.destacado || "#B3261E";
   const fxF = M + 10, fxP = M + 170;
   dibujarFigura(ctx, fxF, fy, k, "F"); dibujarFigura(ctx, fxP, fy, k, "P");
   doc.texto("FRONTAL", fxF + 75 * k, fy + 318, { px: 13, peso: "700", color: colores.gris, align: "center", esp: 2 });
   doc.texto("POSTERIOR", fxP + 75 * k, fy + 318, { px: 13, peso: "700", color: colores.gris, align: "center", esp: 2 });
+  const marcado = (l) => !!(marca && l.destacado);
+  // Leyenda
+  if (marca) {
+    const ly0 = fy + 348;
+    ctx.beginPath(); ctx.arc(M + 18, ly0 - 5, 9, 0, Math.PI * 2); ctx.fillStyle = ROJO; ctx.fill();
+    ctx.beginPath(); ctx.arc(M + 18, ly0 - 5, 13, 0, Math.PI * 2); ctx.lineWidth = 2; ctx.strokeStyle = ROJO; ctx.stroke();
+    doc.texto(marca.etiqueta, M + 38, ly0, { px: 15, peso: "700", color: ROJO });
+    ctx.beginPath(); ctx.arc(M + 188, ly0 - 5, 9, 0, Math.PI * 2); ctx.fillStyle = colores.acento; ctx.fill();
+    doc.texto("Otro hallazgo", M + 204, ly0, { px: 15, color: colores.gris });
+  }
+  // Primero los normales y encima los destacados, para que estos no queden tapados
+  const orden = lista.map((l, i) => ({ l, i })).sort((a, b) => marcado(a.l) - marcado(b.l));
   const puestos = [];
+  const pos = {};
+  // Las posiciones se reparten en el orden de la lista (los números no cambian de sitio)
   lista.forEach((l, i) => {
     const z = zonaPorId(l.zona); if (!z) return;
     const ox0 = (z.v === "F" ? fxF : fxP) + z.x * k, oy0 = fy + z.y * k;
     const fuera = z.x < 75 ? -1 : z.x > 75 ? 1 : (i % 2 ? 1 : -1);
     const cand = [[0, 0], [fuera * 30, -10], [fuera * 30, 16], [fuera * 56, 0], [-fuera * 30, -10], [fuera * 56, 26], [fuera * 56, -26], [-fuera * 56, 0]];
     let px = ox0, py = oy0;
-    for (const [dx, dy] of cand) { const tx = ox0 + dx, ty = oy0 + dy; if (puestos.every(([qx, qy]) => Math.hypot(qx - tx, qy - ty) >= 25)) { px = tx; py = ty; break; } }
-    if (px !== ox0 || py !== oy0) { doc.linea(ox0, oy0, px, py, colores.acento, 1.5); ctx.beginPath(); ctx.arc(ox0, oy0, 3, 0, Math.PI * 2); ctx.fillStyle = colores.acento; ctx.fill(); }
+    for (const [dx, dy] of cand) { const tx = ox0 + dx, ty = oy0 + dy; if (puestos.every(([qx, qy]) => Math.hypot(qx - tx, qy - ty) >= 28)) { px = tx; py = ty; break; } }
     puestos.push([px, py]);
-    ctx.beginPath(); ctx.arc(px, py, 12, 0, Math.PI * 2); ctx.fillStyle = colores.acento; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = "#FFFFFF"; ctx.stroke();
-    doc.texto(String(i + 1), px, py + 5, { px: 14, peso: "700", color: "#FFFFFF", align: "center" });
+    pos[i] = { ox0, oy0, px, py };
+  });
+  orden.forEach(({ l, i }) => {
+    const p = pos[i]; if (!p) return;
+    const col = marcado(l) ? ROJO : colores.acento;
+    if (p.px !== p.ox0 || p.py !== p.oy0) { doc.linea(p.ox0, p.oy0, p.px, p.py, col, 1.5); ctx.beginPath(); ctx.arc(p.ox0, p.oy0, 3, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill(); }
+    ctx.beginPath(); ctx.arc(p.px, p.py, 12, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = "#FFFFFF"; ctx.stroke();
+    if (marcado(l)) { ctx.beginPath(); ctx.arc(p.px, p.py, 16, 0, Math.PI * 2); ctx.lineWidth = 2.5; ctx.strokeStyle = ROJO; ctx.stroke(); }
+    doc.texto(String(i + 1), p.px, p.py + 5, { px: 14, peso: "700", color: "#FFFFFF", align: "center" });
   });
   const lx = M + 340, lw = W - M - lx;
   let ly = fy;
   lista.forEach((l, i) => {
-    ctx.beginPath(); ctx.arc(lx + 13, ly + 13, 13, 0, Math.PI * 2); ctx.fillStyle = colores.acento; ctx.fill();
+    const m = marcado(l), col = m ? ROJO : colores.acento;
+    ctx.beginPath(); ctx.arc(lx + 13, ly + 13, 13, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill();
     doc.texto(String(i + 1), lx + 13, ly + 19, { px: 15, peso: "700", color: "#FFFFFF", align: "center" });
-    doc.texto(doc.recortar(`${l.tipo} · ${zonaPorId(l.zona) ? zonaPorId(l.zona).nombre : "—"}`, lw - 40, 20, "700"), lx + 38, ly + 20, { px: 20, peso: "700" });
+    let tagW = 0;
+    if (m) {
+      const tag = (marca.doc || marca.etiqueta).toUpperCase();
+      doc.fuente(13, "700"); tagW = doc.ctx.measureText(tag).width + 18 + tag.length * 1.5;
+      doc.rect(W - M - tagW, ly + 1, tagW, 26, 13, ROJO, null);
+      doc.texto(tag, W - M - tagW / 2, ly + 19, { px: 13, peso: "700", color: "#FFFFFF", align: "center", esp: 1.5 });
+    }
+    doc.texto(doc.recortar(`${l.tipo} · ${zonaPorId(l.zona) ? zonaPorId(l.zona).nombre : "—"}`, lw - 40 - (tagW ? tagW + 12 : 0), 20, "700"), lx + 38, ly + 20, { px: 20, peso: "700", color: m ? ROJO : undefined });
     ly += 22;
     if (conDesc && l.desc) ly = doc.parrafo(l.desc, lx + 38, ly + 24, lw - 40, { px: 17, lh: 23, max: 2, color: colores.gris }) + 30;
     else ly += 22;

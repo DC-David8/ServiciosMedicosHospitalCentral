@@ -2,6 +2,10 @@
 window.SERVICIO = (() => {
   const art = (v) => (v.sexo === "Femenino" ? { el: "la", ciud: "la ciudadana", fall: "la fallecida", D: "Dña.", o: "a" } : { el: "el", ciud: "el ciudadano", fall: "el fallecido", D: "D.", o: "o" });
   const minus = (t) => (t ? t.charAt(0).toLowerCase() + t.slice(1) : "");
+  const mortales = (v) => {
+    const m = (v.hallazgos_ext || []).filter((z) => z.zona && z.tipo && z.destacado);
+    return m.length ? ` ${m.length === 1 ? "Lesión mortal" : "Lesiones mortales"}: ${unirEs(m.map((z) => `${z.tipo.toLowerCase()} en ${zonaPorId(z.zona).nombre.toLowerCase()}`))}.` : "";
+  };
   const HALLAZGOS = [
     "Herida por arma de fuego (entrada)", "Herida por arma de fuego (salida)", "Herida incisa", "Herida contusa",
     "Contusión", "Hematoma", "Fractura", "Quemadura", "Abrasión", "Marcas de ligadura", "Livideces", "Rigidez cadavérica", "Otro",
@@ -23,12 +27,12 @@ window.SERVICIO = (() => {
         id: "defuncion", nombre: "Certificado de defunción", titulo: "CERTIFICADO DE DEFUNCIÓN",
         org: "HOSPITAL CENTRAL · MEDICINA FORENSE", subtitulo: "Acta oficial de fallecimiento",
         prefijo: "DEF", etiquetaNumero: "Nº DE ACTA", archivo: "Certificado_defuncion",
-        secciones: ["fallecido", "constatacion", "causa", "destino"], ocultar: ["rcp", "foto"], resumen: false,
+        secciones: ["fallecido", "constatacion", "causa", "destino"], ocultar: ["rcp"], resumen: false,
         fechaCabecera: (v) => fechaHoraTexto(v.fecha_muerte),
         tituloDeclaracion: "Certificación",
         declaracion: (v) => {
           const a = art(v);
-          return `El médico forense que suscribe certifica que ${a.D} ${v.nombre || "—"}${edadEn(v.nacimiento, v.fecha_muerte) ? `, de ${edadEn(v.nacimiento, v.fecha_muerte)}` : ""}, falleció el ${fechaHoraTexto(v.fecha_muerte).replace(" · ", " a las ")}${v.lugar ? ` en ${v.lugar}` : ""}. Se constató la ausencia de pulso y signos vitales tras maniobras de reanimación sin respuesta. Causa inmediata de la muerte: ${minus(v.causa_inmediata) || "—"}. Manera de muerte: ${minus(v.manera) || "—"}.`;
+          return `El médico forense que suscribe certifica que ${a.D} ${v.nombre || "—"}${edadEn(v.nacimiento, v.fecha_muerte) ? `, de ${edadEn(v.nacimiento, v.fecha_muerte)}` : ""}, falleció el ${fechaHoraTexto(v.fecha_muerte).replace(" · ", " a las ")}${v.lugar ? ` en ${v.lugar}` : ""}. Se constató la ausencia de pulso y signos vitales tras maniobras de reanimación sin respuesta. Causa inmediata de la muerte: ${minus(v.causa_inmediata) || "—"}.${mortales(v)} Manera de muerte: ${minus(v.manera) || "—"}.`;
         },
         nota: "Se expide el presente certificado para su entrega a los servicios funerarios o a la familia.",
       },
@@ -47,7 +51,7 @@ window.SERVICIO = (() => {
         { id: "edad", tipo: "calculado", etiqueta: "Edad", calc: (v) => edadEn(v.nacimiento, v.fecha_muerte) },
         { id: "sexo", tipo: "select", etiqueta: "Sexo", opciones: ["Masculino", "Femenino"], valor: "Masculino" },
         { id: "identidad", tipo: "check", etiqueta: "Identidad comprobada mediante el DNI", etiquetaDoc: "Identidad", textoSi: "Comprobada con DNI", valor: true },
-        { id: "foto", tipo: "imagen", etiqueta: "Fotografía del cuerpo o del DNI", opcional: true, ayuda: "Solo aparece en el informe de autopsia." },
+        { id: "dni", tipo: "imagen", etiqueta: "DNI del fallecido", opcional: true, lateral: true, pieDoc: "DNI del fallecido", ayuda: "Haz el recorte del DNI y pégalo aquí. Sale junto a los datos en el certificado y en el informe." },
       ] },
       { id: "constatacion", titulo: "Constatación de la muerte", campos: [
         { id: "fecha_muerte", tipo: "fechahora", etiqueta: "Fecha y hora de la muerte", req: true, valor: "ahora" },
@@ -57,7 +61,7 @@ window.SERVICIO = (() => {
       { id: "externo", titulo: "Examen externo", campos: [
         { id: "temperatura", tipo: "numero", etiqueta: "Temperatura corporal", unidad: "°C", min: 10, maxv: 42, paso: 0.1 },
         { id: "muestras_sup", tipo: "check", etiqueta: "Muestras de superficie tomadas", etiquetaDoc: "Muestras de superficie", textoSi: "Tomadas", valor: true },
-        { id: "hallazgos_ext", tipo: "zonas", etiqueta: "Hallazgos externos", tipos: HALLAZGOS, textoTipo: "Hallazgo", ayuda: "Se numeran igual en la figura del informe." },
+        { id: "hallazgos_ext", tipo: "zonas", etiqueta: "Hallazgos y lesiones", tipos: HALLAZGOS, textoTipo: "Hallazgo", destacar: { etiqueta: "Lesión mortal", doc: "Mortal" }, maximo: 10, ayuda: "Se numeran igual en la figura del informe. Marca «Lesión mortal» en las que causaron la muerte: salen en rojo." },
         { id: "ext_desc", tipo: "area", etiqueta: "Otros hallazgos externos", opcional: true },
       ] },
       { id: "interno", titulo: "Examen interno", campos: [
@@ -84,6 +88,8 @@ window.SERVICIO = (() => {
       f.push(`Se realiza autopsia a ${a.D} ${v.nombre || "—"}${v.identidad ? ", identificad" + a.o + " mediante su DNI" : ""}.`);
       if (v.temperatura) f.push(`Temperatura corporal de ${v.temperatura} °C a la exploración.`);
       if (ext.length) f.push(`En el examen externo se objetivan ${ext.length === 1 ? "un hallazgo" : `${ext.length} hallazgos`}: ${unirEs(ext.slice(0, 5).map((z) => `${z.tipo.toLowerCase()} en ${zonaPorId(z.zona).nombre.toLowerCase()}`))}.`);
+      const mort = (v.hallazgos_ext || []).map((z, i) => ({ ...z, n: i + 1 })).filter((z) => z.zona && z.tipo && z.destacado);
+      if (mort.length) f.push(`${mort.length === 1 ? "Se considera mortal la lesión" : "Se consideran mortales las lesiones"} ${unirEs(mort.map((z) => `nº ${z.n} (${z.tipo.toLowerCase()} en ${zonaPorId(z.zona).nombre.toLowerCase()})`))}.`);
       if (v.hallazgos_int) f.push(`Examen interno: ${minus(v.hallazgos_int).replace(/\.$/, "")}.`);
       if (v.objetos) f.push(`Se extraen ${minus(v.objetos).replace(/\.$/, "")} para su análisis.`);
       const causas = [v.causa_inmediata && `causa inmediata ${minus(v.causa_inmediata)}`, v.causa_intermedia && `causa intermedia ${minus(v.causa_intermedia)}`, v.causa_fundamental && `causa fundamental ${minus(v.causa_fundamental)}`].filter(Boolean);
@@ -101,7 +107,7 @@ window.SERVICIO = (() => {
       nombre: "Marcus Hale", nacimiento: "1990-11-05", sexo: "Masculino", lugar: "Paleto Bay, carretera del muelle",
       temperatura: "35.2",
       hallazgos_ext: [
-        { zona: "torax", tipo: "Herida por arma de fuego (entrada)", desc: "Orificio de 0,9 cm con anillo contuso." },
+        { zona: "torax", tipo: "Herida por arma de fuego (entrada)", desc: "Orificio de 0,9 cm con anillo contuso.", destacado: true },
         { zona: "espalda", tipo: "Herida por arma de fuego (salida)", desc: "Orificio irregular de 2 cm." },
         { zona: "antebrazo_i", tipo: "Abrasión", desc: "" },
       ],

@@ -60,7 +60,7 @@ Los hechos se recogen *según manifiesta el paciente*: el parte certifica las le
 
 Rescate, cirugía, ginecología y forense usan el mismo motor (`js/servicio.js` + `js/servicio-doc.js`). Cada uno se define en un esquema `js/servicios/<id>.js` con:
 
-- **Secciones y campos**: `texto`, `area`, `fecha`, `fechahora`, `hora`, `numero`, `select`, `segmentos`, `chips`, `check`, `imagen` (se adjunta al documento: se puede elegir un archivo, arrastrarlo o **pegar un recorte** con Ctrl + V, por ejemplo el DNI capturado con Win + Shift + S), `calculado`, `zonas` (hallazgos sobre la figura corporal) y `equipo` (personal de la operación). Con `si: (v) => …` un campo o sección solo aparece cuando aplica.
+- **Secciones y campos**: `texto`, `area`, `fecha`, `fechahora`, `hora`, `numero`, `select`, `segmentos`, `chips`, `check`, `imagen` (se adjunta al documento: se puede elegir un archivo, arrastrarlo o **pegar un recorte** con Ctrl + V, por ejemplo el DNI capturado con Win + Shift + S; con `lateral: true` sale a la derecha del nombre y los datos, como el DNI), `calculado`, `zonas` (hallazgos sobre la figura corporal; con `destacar` cada hallazgo tiene una casilla, p. ej. *Lesión mortal*, y los marcados salen en rojo) y `equipo` (personal de la operación). Con `si: (v) => …` un campo o sección solo aparece cuando aplica.
 - **Documentos**: uno o varios (forense genera dos con los mismos datos). Si el contenido no cabe, el documento pasa a una segunda página; el PDF las mantiene separadas y el PNG las une en una sola imagen.
 - **Resumen automático** (`resumen(v)`), **mensajes /ems** (`mensajes(v)`), **validación extra** (`validar(v)`) y **ejemplo** (`ejemplo`, botón *Cargar ejemplo*).
 
@@ -68,6 +68,7 @@ Reglas del protocolo que comprueba la web:
 
 - **Rescate:** dotación mínima según la zona (fácil acceso: 2 rescatistas con 1 especialista SAR; difícil acceso o mar: 3 con 2 especialistas; siempre un EMS de apoyo de rango Auxiliar o superior), motivo obligatorio para actuar en el Norte y piloto marcado si se usa helicóptero.
 - **Psicotécnico:** un test de sustancias positivo da NO APTO.
+- **Forense:** el DNI del fallecido sale junto a sus datos en los dos documentos; las lesiones marcadas como **mortales** salen en rojo en la figura del informe de autopsia y se citan en las conclusiones y en la certificación del acta.
 
 ## Añadir un servicio nuevo
 

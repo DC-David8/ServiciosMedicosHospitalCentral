@@ -335,6 +335,11 @@ a.servicio:focus-visible { outline: 3px solid var(--accent-2); outline-offset: 2
 .pegar-vista { max-width: 100%; max-height: 260px; border-radius: 6px; object-fit: contain; }
 .lesion.lesion-3 { grid-template-columns: 30px minmax(0, 1.2fr) minmax(0, 1.2fr) 40px; grid-template-areas: "n z t x" "n d d x"; }
 .lesion-3 [data-k="zona"] { grid-area: z; } .lesion-3 [data-k="tipo"] { grid-area: t; } .lesion-3 [data-k="desc"] { grid-area: d; }
+.lesion.lesion-3.lesion-marca { grid-template-areas: "n z t x" "n d d x" "n m m x"; }
+.lesion-destacar { grid-area: m; font-weight: 600; }
+.lesion.destacada { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 7%, var(--surface-2)); }
+.lesion.destacada .lesion-num { background: var(--bad); }
+.lesion.destacada .lesion-destacar { color: var(--bad); }
 .lista-equipo { display: flex; flex-direction: column; gap: 10px; }
 .miembro { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto auto 40px; gap: 10px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); }
 .miembro input:not([type=checkbox]), .miembro select { background: var(--surface); }
@@ -364,6 +369,7 @@ a.servicio:focus-visible { outline: 3px solid var(--accent-2); outline-offset: 2
 .pc-opcion-tit { font-weight: 700; font-size: 14px; color: var(--accent); }
 @media (max-width: 720px) {
   .lesion.lesion-3 { grid-template-columns: 30px minmax(0, 1fr) 40px; grid-template-areas: "n z x" "n t x" "n d x"; }
+  .lesion.lesion-3.lesion-marca { grid-template-areas: "n z x" "n t x" "n d x" "n m x"; }
   .miembro { grid-template-columns: minmax(0, 1fr) 40px; }
   .miembro [data-k="nombre"] { grid-column: 1; } .miembro select { grid-column: 1; }
   .miembro .check { grid-column: 1; }

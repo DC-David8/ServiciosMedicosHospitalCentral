@@ -100,11 +100,12 @@
     const c = campo(id), l = listas[id], cont = $(`#lista-${id}`);
     if (c.tipo === "zonas") {
       cont.innerHTML = l.map((z, i) => `
-        <div class="lesion lesion-3" data-lista="${id}" data-i="${i}">
+        <div class="lesion lesion-3${c.destacar ? " lesion-marca" : ""}${c.destacar && z.destacado ? " destacada" : ""}" data-lista="${id}" data-i="${i}">
           <span class="lesion-num">${i + 1}</span>
           <select data-k="zona" aria-label="Zona ${i + 1}">${opcionesZona(z.zona)}</select>
           <select data-k="tipo" aria-label="Hallazgo ${i + 1}"><option value="" disabled ${z.tipo ? "" : "selected"}>${esc(c.textoTipo || "Hallazgo")}</option>${c.tipos.map((t) => `<option ${t === z.tipo ? "selected" : ""}>${esc(t)}</option>`).join("")}</select>
           <input data-k="desc" value="${esc(z.desc || "")}" placeholder="Descripción (opcional)" aria-label="Descripción ${i + 1}" maxlength="110">
+          ${c.destacar ? `<label class="check lesion-destacar"><input type="checkbox" data-k="destacado" ${z.destacado ? "checked" : ""}> ${esc(c.destacar.etiqueta)}</label>` : ""}
           <button type="button" class="btn-quitar" aria-label="Quitar ${i + 1}" title="Quitar">✕</button>
         </div>`).join("");
     } else {
@@ -290,13 +291,13 @@
   });
   $("#form-servicio").addEventListener("change", (e) => {
     const fila = e.target.closest("[data-lista]");
-    if (fila) { const l = listas[fila.dataset.lista][Number(fila.dataset.i)]; const k = e.target.dataset.k; l[k] = e.target.type === "checkbox" ? e.target.checked : e.target.value; }
+    if (fila) { const l = listas[fila.dataset.lista][Number(fila.dataset.i)]; const k = e.target.dataset.k; l[k] = e.target.type === "checkbox" ? e.target.checked : e.target.value; if (k === "destacado") fila.classList.toggle("destacada", e.target.checked); }
     if (e.target.id === "cargo-sel") { $("#cargo").hidden = e.target.value !== OTRO; if (!$("#cargo").hidden) $("#cargo").focus(); }
     actualizar();
   });
   $("#form-servicio").addEventListener("click", (e) => {
     const add = e.target.closest("[data-anadir]");
-    if (add) { const id = add.dataset.anadir; listas[id].push(campo(id).tipo === "zonas" ? { zona: "", tipo: "", desc: "" } : { nombre: "", cargo: "", sar: false, piloto: false }); pintarLista(id); actualizar(); return; }
+    if (add) { const id = add.dataset.anadir; listas[id].push(campo(id).tipo === "zonas" ? { zona: "", tipo: "", desc: "", destacado: false } : { nombre: "", cargo: "", sar: false, piloto: false }); pintarLista(id); actualizar(); return; }
     const q = e.target.closest(".btn-quitar");
     if (q) { const f = q.closest("[data-lista]"); listas[f.dataset.lista].splice(Number(f.dataset.i), 1); pintarLista(f.dataset.lista); actualizar(); return; }
     if (e.target.closest("[data-imagen], [data-pegar], [data-quitar-imagen]")) return; // campos de imagen (pegar-imagen.js)
