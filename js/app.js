@@ -151,6 +151,11 @@
       evaluador: $("#evaluador").value.trim(),
       cargo: valorCargo(),
       firma: $("#firma").value.trim() || $("#evaluador").value.trim(),
+      fisico: {
+        tension: $("#fis-tension").value.trim(), reflejos: $("#fis-reflejos").value,
+        pico: $("#fis-pico").value, recuperacion: $("#fis-recuperacion").value, saturacion: $("#fis-saturacion").value,
+        sustancias: radio("sustancias") || "Negativo",
+      },
     };
     guardar("psico-evaluador", { evaluador: estado.datos.evaluador, cargo: estado.datos.cargo, firma: $("#firma").value.trim() });
     nuevoExamen();
@@ -223,10 +228,21 @@
   }
 
   // ── 3 · Resultado ──
+  // Criterio redactado + nota del test de sustancias si es positivo
+  function criterio() {
+    let t = redactarCriterio(estado.resultado, estado.datos.sexo, estado.apto);
+    if (estado.datos.fisico && estado.datos.fisico.sustancias === "Positivo") t += " El test de detección de sustancias resulta positivo.";
+    return t;
+  }
+
   function finalizar() {
     estado.resultado = evaluar(estado.preguntas, estado.respuestas);
+    if (estado.datos.fisico && estado.datos.fisico.sustancias === "Positivo") {
+      estado.resultado.apto = false;
+      estado.resultado.motivos.unshift("Test de sustancias positivo");
+    }
     estado.apto = estado.resultado.apto;
-    estado.observaciones = redactarCriterio(estado.resultado, estado.datos.sexo, estado.apto);
+    estado.observaciones = criterio();
     estado.editado = false;
     pintarResultado();
     irA("resultado");
@@ -271,7 +287,7 @@
   function iniciarResultado() {
     $("#observaciones").addEventListener("input", () => { estado.observaciones = $("#observaciones").value; estado.editado = true; pintarAyudaObs(); });
     $("#btn-regenerar").addEventListener("click", () => {
-      estado.observaciones = redactarCriterio(estado.resultado, estado.datos.sexo, estado.apto);
+      estado.observaciones = criterio();
       estado.editado = false;
       $("#observaciones").value = estado.observaciones;
       pintarAyudaObs();
@@ -279,7 +295,7 @@
     document.querySelectorAll('input[name="res"]').forEach((r) => r.addEventListener("change", () => {
       estado.apto = radio("res") === "apto";
       if (!estado.editado) {
-        estado.observaciones = redactarCriterio(estado.resultado, estado.datos.sexo, estado.apto);
+        estado.observaciones = criterio();
         $("#observaciones").value = estado.observaciones;
         pintarAyudaObs();
       }
@@ -342,6 +358,7 @@
     });
   }
 
+  if (typeof PROTOCOLOS !== "undefined" && $("#protocolo")) pintarProtocolo($("#protocolo"), PROTOCOLOS.psicotecnico);
   iniciarFormulario();
   iniciarExamen();
   iniciarResultado();

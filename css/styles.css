@@ -310,3 +310,59 @@ a.servicio:focus-visible { outline: 3px solid var(--accent-2); outline-offset: 2
 .servicio.es-pronto { background: var(--surface-2); cursor: default; }
 .servicio.es-pronto .servicio-icono { filter: grayscale(1); opacity: .6; }
 .servicio.es-pronto .servicio-nombre { color: var(--muted); }
+
+/* ── Páginas de servicio (motor común) ── */
+.pestanas { max-width: 860px; margin: 0 auto; padding: 0 16px; display: flex; gap: 4px; }
+.pestanas button { background: none; border: 0; border-top: 3px solid rgba(255,255,255,.14); color: var(--head-muted); font: 600 14px/1 var(--f-body); padding: 12px 14px 14px; cursor: pointer; flex: 1; text-align: left; }
+.pestanas button.activo { color: var(--head-ink); border-top-color: var(--accent-2); }
+.pestanas button:hover { color: var(--head-ink); }
+.pestanas button[hidden] { display: none; }
+.seg-texto span { font-family: var(--f-body); font-size: 14px; font-weight: 600; }
+.hojas { display: flex; flex-direction: column; gap: 16px; }
+.subir { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.subir-btn { cursor: pointer; display: inline-flex; align-items: center; }
+.subir-vista { max-width: 100%; max-height: 220px; border-radius: 8px; border: 1px solid var(--line); object-fit: contain; align-self: flex-start; background: var(--surface-2); }
+.lesion.lesion-3 { grid-template-columns: 30px minmax(0, 1.2fr) minmax(0, 1.2fr) 40px; grid-template-areas: "n z t x" "n d d x"; }
+.lesion-3 [data-k="zona"] { grid-area: z; } .lesion-3 [data-k="tipo"] { grid-area: t; } .lesion-3 [data-k="desc"] { grid-area: d; }
+.lista-equipo { display: flex; flex-direction: column; gap: 10px; }
+.miembro { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto auto 40px; gap: 10px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); }
+.miembro input:not([type=checkbox]), .miembro select { background: var(--surface); }
+.miembro .check { font-size: 13px; white-space: nowrap; }
+.mensajes { gap: 12px; }
+.mensaje { display: flex; flex-direction: column; gap: 6px; }
+.mensaje + .mensaje { margin-top: 10px; }
+.mensaje-fila { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.mensaje-fila code, .pc-cmd code { font: 500 13px/1.5 var(--f-mono); background: var(--surface-2); border: 1px solid var(--line); border-radius: 7px; padding: 9px 11px; white-space: pre-wrap; word-break: break-word; min-width: 0; }
+.pc-copiar { border: 1px solid var(--line); background: var(--surface); color: var(--accent); font: 700 12px/1 var(--f-body); padding: 9px 11px; border-radius: 7px; cursor: pointer; white-space: nowrap; }
+.pc-copiar:hover { border-color: var(--accent); }
+.pc-copiar.ok { background: var(--ok-bg); color: var(--ok); border-color: var(--ok); }
+
+/* Protocolo IC */
+.protocolo { gap: 14px; }
+.pc-intro { margin: 0; color: var(--muted); font-size: 14px; }
+.pc-etapas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 22px; counter-reset: none; }
+.pc-etapa h3 { font: 700 17px/1.3 var(--f-display); display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.pc-etapa h3 span { font: 700 11px/1 var(--f-body); letter-spacing: .14em; text-transform: uppercase; color: var(--ems); }
+.pc-etapa ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.pc-cmd { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.pc-cmd code b { color: var(--accent); }
+.pc-nota { font-size: 14px; color: var(--muted); padding: 8px 12px; border-left: 3px solid var(--line); background: var(--surface-2); border-radius: 0 6px 6px 0; }
+.pc-dice { font-size: 14px; font-style: italic; padding: 8px 12px; border-left: 3px solid var(--accent-2); }
+.pc-dice span { display: block; font: 700 11px/1.4 var(--f-body); font-style: normal; letter-spacing: .1em; text-transform: uppercase; color: var(--accent-2); }
+.pc-opcion { border: 1px solid var(--line); border-radius: 9px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.pc-opcion-tit { font-weight: 700; font-size: 14px; color: var(--accent); }
+@media (max-width: 720px) {
+  .lesion.lesion-3 { grid-template-columns: 30px minmax(0, 1fr) 40px; grid-template-areas: "n z x" "n t x" "n d x"; }
+  .miembro { grid-template-columns: minmax(0, 1fr) 40px; }
+  .miembro [data-k="nombre"] { grid-column: 1; } .miembro select { grid-column: 1; }
+  .miembro .check { grid-column: 1; }
+  .miembro .btn-quitar { grid-column: 2; grid-row: 1; }
+  .segmentos.seg-texto { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 420px) {
+  .segmentos.seg-texto { grid-template-columns: minmax(0, 1fr) !important; }
+  .pc-copiar { padding: 8px 8px; font-size: 11px; }
+  .mensaje-fila code, .pc-cmd code { font-size: 12px; padding: 8px 9px; }
+}
+.protocolo-plegable summary { cursor: pointer; font: 700 12px/1 var(--f-body); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+.protocolo-plegable[open] summary { margin-bottom: 6px; }

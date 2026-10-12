@@ -2,8 +2,20 @@
 
 Herramientas web para el rol del Hospital Central en el servidor de FiveM **Jerarquía RP**. Desde un portal se elige el servicio y cada uno genera su documento oficial del hospital en **PNG o PDF**.
 
-| Área | Servicio | Página | Estado |
+| Área | Servicio | Página | Documento |
 |---|---|---|---|
+| Salud Mental y Evaluación Psicológica | Psicotécnico policial (LSPD, LSSD, FBI) | `psicotecnico.html` | Certificado de aptitud |
+| Urgencias y Rescate | Parte médico de lesiones | `parte.html` | Parte de lesiones |
+| Urgencias y Rescate | Búsqueda y rescate | `rescate.html` | Informe de operación |
+| Cirugía | Cirugía general | `cirugia.html` | Informe quirúrgico |
+| Ginecología y Obstetricia | Consulta de ginecología | `ginecologia.html` | Informe de consulta |
+| Medicina Forense | Defunción y autopsia (CK) | `forense.html` | Certificado de defunción + Informe de autopsia |
+
+Cada servicio tiene dos pestañas: **Documento** (formulario y generación) y **Protocolo IC** (los pasos registrados por el hospital, con cada comando `/me`, `/do`, `/e` o `/ems` listo para copiar). Los servicios que lo piden generan además el mensaje **/ems** ya relleno (anuncio de fallecimiento, aviso de salida de rescate).
+
+El portal (`index.html`) se dibuja a partir de `js/servicios.js`.
+
+---|---|---|---|
 | Salud Mental y Evaluación Psicológica | Psicotécnico policial (LSPD, LSSD, FBI) | `psicotecnico.html` | Activo |
 | Urgencias | Parte médico de lesiones | `parte.html` | Activo |
 | Medicina Forense | Certificado de defunción | `defuncion.html` | Próximamente |
@@ -16,9 +28,10 @@ El portal (`index.html`) se dibuja a partir de `js/servicios.js`. Cambiar el est
 ## Psicotécnico policial
 
 1. **Datos** · Facción (Los Santos Police Department, Los Santos Sheriff Department o Federal Bureau of Investigation), nombre, ID/placa, rango oficial de su facción (o uno escrito a mano), fecha de nacimiento y sexo del agente. Datos del evaluador (nombre, cargo del Hospital Central y firma), fechas de evaluación y emisión, y validez del certificado (6, 12 o 24 meses).
-2. **Examen** · **10, 20, 30, 40, 50 o 60 preguntas**, repartidas por igual entre 6 competencias. Preguntas y respuestas se barajan en cada examen.
-3. **Resultado** · Puntuación global y por competencia, veredicto APTO / NO APTO y **criterio redactado automáticamente** (editable).
-4. **Certificado** · Certificado de aptitud con los colores de la facción, descargable en PNG o PDF.
+2. **Evaluación física** · Tensión, reflejos, pulso máximo y a los 30 s, saturación y test de sustancias (etapas 1-3 del protocolo). Aparecen en la ficha del certificado; un test positivo da NO APTO.
+3. **Examen** · **10, 20, 30, 40, 50 o 60 preguntas**, repartidas por igual entre 6 competencias. Preguntas y respuestas se barajan en cada examen.
+4. **Resultado** · Puntuación global y por competencia, veredicto APTO / NO APTO y **criterio redactado automáticamente** (editable).
+5. **Certificado** · Certificado de aptitud con los colores de la facción, descargable en PNG o PDF.
 
 ### Banco de preguntas
 
@@ -51,27 +64,30 @@ Los hechos se recogen *según manifiesta el paciente*: el parte certifica las le
 
 ---
 
-## Añadir un servicio nuevo (por ejemplo, certificado de defunción)
+## Servicios con el motor común
 
-1. **Página:** copia `parte.html` como plantilla (`defuncion.html`). Mantén la cabecera con el enlace `← Servicios`, la carga de scripts compartidos y la vista de documento con los botones de descarga.
-2. **Documento:** crea `js/defuncion-cert.js` usando la base común `js/documento.js`:
-   ```js
-   const doc = crearDocumento(canvas);
-   doc.cabecera({ logo, org: "HOSPITAL CENTRAL · MEDICINA FORENSE", titulo: "CERTIFICADO DE DEFUNCIÓN",
-                  etiquetaNumero: "Nº DE CERTIFICADO", numero, fecha });
-   let y = doc.titulo("DATOS DEL FALLECIDO", doc.inicio);
-   // … secciones con doc.dato, doc.parrafo, doc.rect …
-   doc.firma({ firma, nombre, cargo, etiqueta: "MÉDICO FORENSE", fechaEmision, sello });
-   doc.pie({ referencia: numero });
-   ```
-   El número de documento sale de `numeroDocumento("DEF", fecha, nombre)`. La figura corporal con marcadores de `js/parte-cert.js` (`dibujarFigura`, `ZONAS`) sirve también para el informe de autopsia.
-3. **Formulario:** crea `js/defuncion.js` con la lógica. Cargos del hospital (`CARGOS`), descargas (`descargarArchivo`, `lienzoAPng`) y PDF (`crearPdfDesdeCanvas`) ya están en `js/hospital.js` y `js/pdf.js`.
-4. **Portal:** en `js/servicios.js`, cambia el servicio a `estado: "activo"`.
-5. **Icono de inicio:** en `tools/generar_iconos.py` quita `arranque=False` del servicio, ejecuta `python3 tools/generar_iconos.py defuncion` y crea su `manifest-defuncion.webmanifest` (copia de `manifest-parte.webmanifest`). Las etiquetas `<head>` se obtienen con `etiquetas_head()` del mismo script.
+Rescate, cirugía, ginecología y forense usan el mismo motor (`js/servicio.js` + `js/servicio-doc.js`). Cada uno se define en un esquema `js/servicios/<id>.js` con:
+
+- **Secciones y campos**: `texto`, `area`, `fecha`, `fechahora`, `hora`, `numero`, `select`, `segmentos`, `chips`, `check`, `imagen` (se adjunta al documento), `calculado`, `zonas` (hallazgos sobre la figura corporal) y `equipo` (personal de la operación). Con `si: (v) => …` un campo o sección solo aparece cuando aplica.
+- **Documentos**: uno o varios (forense genera dos con los mismos datos). Si el contenido no cabe, el documento pasa a una segunda página; el PDF las mantiene separadas y el PNG las une en una sola imagen.
+- **Resumen automático** (`resumen(v)`), **mensajes /ems** (`mensajes(v)`), **validación extra** (`validar(v)`) y **ejemplo** (`ejemplo`, botón *Cargar ejemplo*).
+
+Reglas del protocolo que comprueba la web:
+
+- **Rescate:** dotación mínima según la zona (fácil acceso: 2 rescatistas con 1 especialista SAR; difícil acceso o mar: 3 con 2 especialistas; siempre un EMS de apoyo de rango Auxiliar o superior), motivo obligatorio para actuar en el Norte y piloto marcado si se usa helicóptero.
+- **Psicotécnico:** un test de sustancias positivo da NO APTO.
+
+## Añadir un servicio nuevo
+
+1. **Esquema:** copia uno de `js/servicios/` (por ejemplo `cirugia.js`) como `js/servicios/<id>.js` y adapta campos, documento, resumen y ejemplo.
+2. **Protocolo:** añade sus pasos en `js/protocolos.js` (clave = `protocolo` del esquema).
+3. **Icono:** añade el servicio en `tools/generar_iconos.py` → `SERVICIOS` y ejecuta `python3 tools/generar_iconos.py <id>`.
+4. **Página:** `python3 tools/crear_servicio.py <id> "<Título>" "<Nombre corto>" "<Descripción>"` crea `<id>.html` y su manifiesto a partir de `tools/plantilla-servicio.html`.
+5. **Portal:** añádelo en `js/servicios.js` con `estado: "activo"` (o `"pronto"` para anunciarlo).
 
 ## Añadir a la pantalla de inicio (iPhone / Android)
 
-Cada página se instala como app con su propio icono y pantalla de arranque: **Hospital Central** (portal, EMS), **Psicotécnico** (Ψ), **Parte médico** (portapapeles) y **Evaluadores** (candado). En iPhone: Safari → Compartir → **Añadir a pantalla de inicio**. Desde la app instalada, las descargas abren el menú Compartir.
+Cada página se instala como app con su propio icono y pantalla de arranque: **Hospital Central** (portal), **Psicotécnico** (Ψ), **Parte médico** (portapapeles), **Rescate** (salvavidas), **Cirugía** (tijeras), **Ginecología** (♀), **Forense** (acta) y **Evaluadores** (candado). En iPhone: Safari → Compartir → **Añadir a pantalla de inicio**. Desde la app instalada, las descargas abren el menú Compartir.
 
 > Si ya tenías un acceso creado antes de un cambio de icono, bórralo y vuelve a añadirlo.
 
@@ -79,23 +95,25 @@ Cada página se instala como app con su propio icono y pantalla de arranque: **H
 
 ```
 ├── index.html                 Portal de servicios
-├── psicotecnico.html          Psicotécnico policial
-├── admin.html                 Acceso evaluadores del psicotécnico
+├── psicotecnico.html          Psicotécnico policial (+ admin.html, acceso evaluadores)
 ├── parte.html                 Parte médico de lesiones
+├── rescate.html, cirugia.html, ginecologia.html, forense.html   Servicios del motor común
 ├── manifest*.webmanifest      Manifiestos de app web (uno por página)
 ├── css/styles.css             Estilos de todas las páginas (claro y oscuro)
 ├── js/servicios.js            Registro de servicios y áreas del portal
-├── js/hospital.js             Compartido: cargos del hospital, descargas, vista previa
-├── js/documento.js            Compartido: base de los documentos médicos (cabecera, firma, pie…)
+├── js/servicios/<id>.js       Esquema de cada servicio del motor común
+├── js/servicio.js             Motor: formulario, pestañas, mensajes y descargas
+├── js/servicio-doc.js         Motor: dibujo del documento y paginación
+├── js/protocolos.js           Protocolos IC del hospital con comandos copiables
+├── js/hospital.js             Compartido: cargos, descargas, edad, vista previa
+├── js/documento.js            Compartido: cabecera, firma, pie y utilidades de los documentos
 ├── js/certificado.js          Fuentes y utilidades de dibujo + certificado del psicotécnico
-├── js/pdf.js                  Exportación a PDF sin librerías externas
-├── js/preguntas.js            Banco de preguntas del psicotécnico
-├── js/evaluacion.js           Puntuación y criterio del psicotécnico
-├── js/app.js                  Flujo del psicotécnico
-├── js/admin.js                Acceso evaluadores
-├── js/parte.js                Formulario y valoración del parte
-├── js/parte-cert.js           Dibujo del parte (figura corporal y secciones)
-├── tools/generar_iconos.py    Generador de iconos y pantallas de arranque
+├── js/pdf.js                  PDF de una o varias páginas sin librerías externas
+├── js/preguntas.js, js/evaluacion.js, js/app.js, js/admin.js   Psicotécnico
+├── js/parte.js, js/parte-cert.js                                Parte de lesiones (y figura corporal)
+├── tools/generar_iconos.py    Iconos y pantallas de arranque
+├── tools/crear_servicio.py    Crea la página y el manifiesto de un servicio
+├── tools/plantilla-servicio.html
 └── assets/                    Logo EMS, sello, escudos de facciones e iconos de app
 ```
 

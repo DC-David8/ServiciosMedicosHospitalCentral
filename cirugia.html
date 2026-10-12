@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Informe quirúrgico · Hospital Central</title>
+<meta name="description" content="Informe quirúrgico del Hospital Central: intervención, cierre y postoperatorio.">
+<!-- App web (inicio en iPhone/Android) -->
+<link rel="manifest" href="manifest-cirugia.webmanifest">
+<meta name="theme-color" content="#16304B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cirugía">
+<link rel="apple-touch-icon" href="assets/app/icon-cirugia-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/app/icon-cirugia-192.png">
+<link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/app/splash-cirugia-1320x2868.png">
+<link rel="apple-touch-startup-image" media="(device-width: 420px) and (device-height: 912px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/app/splash-cirugia-1260x2736.png">
+<link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/app/splash-cirugia-1206x2622.png">
+<link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/app/splash-cirugia-1290x2796.png">
+<link rel="apple-touch-startup-image" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/app/splash-cirugia-1179x2556.png">
+<link rel="apple-touch-startup-image" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/app/splash-cirugia-1284x2778.png">
+<link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/app/splash-cirugia-1170x2532.png">
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/app/splash-cirugia-1125x2436.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/app/splash-cirugia-1242x2688.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="assets/app/splash-cirugia-828x1792.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="assets/app/splash-cirugia-1242x2208.png">
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="assets/app/splash-cirugia-750x1334.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&family=Fraunces:opsz,wght,SOFT,WONK@72,800,100,1&family=Questrial&family=Pinyon+Script&display=swap">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<!--APP-->
+<header class="cabecera">
+  <div class="cabecera-in">
+    <img class="cabecera-logo" src="assets/logo-ems.png" alt="Logotipo EMS" width="56" height="56">
+    <div class="cabecera-txt">
+      <span class="cabecera-org" id="cab-org">Hospital Central</span>
+      <h1 id="cab-titulo">Informe quirúrgico</h1>
+    </div>
+    <a class="facciones-tag enlace-cab" href="./">← Servicios</a>
+  </div>
+  <nav class="pestanas" aria-label="Secciones del servicio">
+    <button type="button" data-tab="documento" class="activo">Documento</button>
+    <button type="button" data-tab="protocolo" id="tab-protocolo">Protocolo IC</button>
+  </nav>
+</header>
+
+<main class="contenedor">
+  <section id="vista-form" class="vista">
+    <div class="intro-parte">
+      <p id="intro"></p>
+      <button type="button" class="btn btn-sec btn-peq" id="btn-ejemplo">Cargar ejemplo</button>
+    </div>
+    <form id="form-servicio" novalidate></form>
+  </section>
+
+  <section id="vista-doc" class="vista" hidden>
+    <div class="acciones acciones-cert">
+      <button type="button" class="btn btn-primario" id="btn-png">Descargar PNG</button>
+      <button type="button" class="btn btn-primario" id="btn-pdf">Descargar PDF</button>
+      <button type="button" class="btn btn-sec" id="btn-editar">Editar datos</button>
+      <button type="button" class="btn btn-sec" id="btn-nuevo">Nuevo</button>
+    </div>
+    <div class="campo" id="selector-doc" hidden>
+      <span class="etiqueta">Documento</span>
+      <div class="segmentos seg-texto" role="radiogroup" aria-label="Documento"></div>
+    </div>
+    <p class="ayuda" id="info-paginas"></p>
+    <p class="aviso" id="aviso-descarga" hidden></p>
+    <div class="bloque mensajes" id="mensajes-doc-bloque"><h3 class="titulo-bloque">Mensajes para el rol</h3><div id="mensajes-doc"></div></div>
+    <div id="hojas" class="hojas"></div>
+  </section>
+
+  <section id="vista-protocolo" class="vista" hidden>
+    <div class="bloque protocolo" id="protocolo"></div>
+  </section>
+</main>
+
+<footer class="pie">Hospital Central · Uso exclusivo de rol · <a href="./">Servicios médicos</a></footer>
+<!--/APP-->
+
+<script src="js/hospital.js"></script>
+<script src="js/certificado.js"></script>
+<script src="js/documento.js"></script>
+<script src="js/parte-cert.js"></script>
+<script src="js/pdf.js"></script>
+<script src="js/protocolos.js"></script>
+<script src="js/servicios/cirugia.js"></script>
+<script src="js/servicio-doc.js"></script>
+<script src="js/servicio.js"></script>
+</body>
+</html>

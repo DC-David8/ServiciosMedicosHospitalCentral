@@ -172,9 +172,29 @@ async function dibujarCertificado(canvas, datos, recursos) {
   rect(M + 26, fy + 26, 170, fh - 52, 10, col.f1);
   imagenCentrada(escudo || logo, M + 26 + 85, fy + fh / 2, 130);
   const fx = M + 230;
+  const fis = datos.fisico;
+  const px0 = W - M - 360; // panel de evaluación física a la derecha de la ficha
+  const limiteNombre = fis ? px0 - fx - 30 : W - M - fx - 20;
   fuente(46, PESO_TITULO, FUENTE_TITULO);
   let nombre = datos.nombre || "";
-  while (ctx.measureText(nombre).width > W - M - fx - 20 && nombre.length > 3) nombre = nombre.slice(0, -2) + "…";
+  while (ctx.measureText(nombre).width > limiteNombre && nombre.length > 3) nombre = nombre.slice(0, -2) + "…";
+  if (fis) {
+    linea(px0 - 20, fy + 24, px0 - 20, fy + fh - 24, "rgba(0,0,0,.12)", 1.5);
+    texto("EVALUACIÓN FÍSICA", px0, fy + 44, { px: 14, peso: "700", color: col.f1, esp: 2.5 });
+    const filasF = [
+      ["Tensión arterial", fis.tension ? `${fis.tension} mmHg` : "—"],
+      ["Reflejos oculares", (fis.reflejos || "—").replace(" y coordinados", "")],
+      ["Pulso máx. / a 30 s", fis.pico || fis.recuperacion ? `${fis.pico || "—"} / ${fis.recuperacion || "—"} lpm` : "—"],
+      ["Saturación O2", fis.saturacion ? `${fis.saturacion} %` : "—"],
+      ["Test de sustancias", fis.sustancias || "—"],
+    ];
+    filasF.forEach(([k, val], i) => {
+      const yy = fy + 80 + i * 30;
+      texto(k, px0, yy, { px: 16, color: CERT_COLORES.gris });
+      const color = k === "Test de sustancias" ? (val === "Positivo" ? CERT_COLORES.mal : CERT_COLORES.ok) : CERT_COLORES.tinta;
+      texto(val, W - M - 22, yy, { px: 17, peso: "700", color, align: "right" });
+    });
+  }
   texto(nombre, fx, fy + 76, { px: 46, peso: PESO_TITULO, fam: FUENTE_TITULO });
   texto(`${datos.rango || ""} · ${datos.faccion || ""}`, fx, fy + 112, { px: 24, peso: "700", color: col.f1 });
   const filas = [

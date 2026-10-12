@@ -121,14 +121,28 @@ function crearDocumento(canvas, { W = 1224, H = 2016, M = 72, colores = DOC_COLO
     return sy - 84; // límite superior del bloque: el contenido debe acabar antes
   };
 
-  const pie = ({ izquierda = "HOSPITAL CENTRAL · DOCUMENTO MÉDICO-LEGAL", referencia } = {}) => {
+  const pie = ({ izquierda = "HOSPITAL CENTRAL · DOCUMENTO MÉDICO-LEGAL", referencia, pagina } = {}) => {
     ctx.fillStyle = C.acento; ctx.fillRect(0, H - 66, W, 6);
     ctx.fillStyle = C.cab; ctx.fillRect(0, H - 60, W, 60);
     texto(izquierda, M - 8, H - 23, { px: 15, peso: "700", color: "#FFFFFF", esp: 3 });
+    if (pagina) texto(pagina, W / 2 + 120, H - 23, { px: 15, color: "rgba(255,255,255,.75)", align: "center", esp: 2 });
     if (referencia) texto(`REF. ${referencia}`, W - M + 8, H - 23, { px: 15, color: "#FFFFFF", align: "right", esp: 2 });
   };
 
-  return { ctx, W, H, M, C, inicio: 292, limiteContenido: H - 270, fuente, texto, recortar, rect, linea, imagen, parrafo, titulo, dato, cabecera, firma, pie };
+  /** Cabecera reducida para las páginas 2 y siguientes. Devuelve dónde empieza el cuerpo. */
+  const cabeceraCompacta = ({ logo, titulo: tit, numero }) => {
+    const alto = 116;
+    const g = ctx.createLinearGradient(0, 0, 0, alto); g.addColorStop(0, C.cab); g.addColorStop(1, C.cab2);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, alto);
+    ctx.fillStyle = C.acento; ctx.fillRect(0, alto, W, 8);
+    imagen(logo, M + 38, 58, 76);
+    texto(recortar(tit, 640, 30, PESO_TITULO, FUENTE_TITULO), M + 96, 70, { px: 30, peso: PESO_TITULO, fam: FUENTE_TITULO, color: "#FFFFFF" });
+    texto("(continuación)", M + 96, 98, { px: 16, color: "rgba(255,255,255,.75)" });
+    if (numero) texto(numero, W - M, 70, { px: 20, peso: "700", color: "#FFFFFF", align: "right" });
+    return 172;
+  };
+
+  return { ctx, W, H, M, C, inicio: 292, limiteContenido: H - 270, fuente, texto, recortar, rect, linea, imagen, parrafo, titulo, dato, cabecera, cabeceraCompacta, firma, pie };
 }
 
 /** Número de documento: PREFIJO-AAAAMMDD-NNNN */

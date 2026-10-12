@@ -1,0 +1,32 @@
+{
+  "name": "Búsqueda y rescate · Hospital Central",
+  "short_name": "Rescate",
+  "description": "Informe de operación del Grupo de Búsqueda y Rescate del Hospital Central.",
+  "lang": "es",
+  "start_url": "./rescate.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A1A2A",
+  "theme_color": "#16304B",
+  "icons": [
+    {
+      "src": "assets/app/icon-rescate-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/app/icon-rescate-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/app/icon-rescate-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -54,6 +54,10 @@
 
   <!-- 1 · DATOS -->
   <section id="vista-datos" class="vista">
+    <details class="bloque protocolo-plegable">
+      <summary>Protocolo IC del psicotécnico</summary>
+      <div class="protocolo" id="protocolo"></div>
+    </details>
     <form id="form-datos" novalidate>
       <fieldset class="bloque">
         <legend>Agente evaluado</legend>
@@ -78,6 +82,24 @@
           <label class="campo"><span class="etiqueta">Sexo <small>(para redactar el criterio)</small></span>
             <select id="sexo" name="sexo"><option value="M">Masculino</option><option value="F">Femenino</option></select></label>
         </div>
+      </fieldset>
+
+      <fieldset class="bloque">
+        <legend>Evaluación física</legend>
+        <p class="ayuda">Datos de las etapas 1 a 3 del protocolo (biometría, estrés cardiopulmonar y sustancias). Aparecen en el certificado.</p>
+        <div class="rejilla rejilla-3">
+          <label class="campo"><span class="etiqueta">Tensión arterial <small>(mmHg)</small></span><input id="fis-tension" autocomplete="off" value="120/80" placeholder="120/80"></label>
+          <label class="campo"><span class="etiqueta">Reflejos oculares</span><select id="fis-reflejos"><option>Inmediatos y coordinados</option><option>Lentos</option><option>Descoordinados</option></select></label>
+          <label class="campo"><span class="etiqueta">Pulso máximo <small>(lpm)</small></span><input id="fis-pico" type="number" inputmode="numeric" min="60" max="220" value="145"></label>
+          <label class="campo"><span class="etiqueta">Pulso a los 30 s <small>(lpm)</small></span><input id="fis-recuperacion" type="number" inputmode="numeric" min="40" max="200" value="98"></label>
+          <label class="campo"><span class="etiqueta">Saturación de oxígeno <small>(%)</small></span><input id="fis-saturacion" type="number" inputmode="numeric" min="70" max="100" value="98"></label>
+          <div class="campo"><span class="etiqueta" id="lbl-sust">Test de sustancias</span>
+            <div class="segmentos tres" role="radiogroup" aria-labelledby="lbl-sust" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+              <label><input type="radio" name="sustancias" id="sust-neg" value="Negativo" checked><span>Negativo</span></label>
+              <label><input type="radio" name="sustancias" id="sust-pos" value="Positivo"><span>Positivo</span></label>
+            </div></div>
+        </div>
+        <p class="ayuda">Recuperación normal a los 30 s: 95-100 lpm. Un test de sustancias positivo da NO APTO.</p>
       </fieldset>
 
       <fieldset class="bloque">
@@ -214,6 +236,7 @@
 <!--/APP-->
 
 <script src="js/hospital.js"></script>
+<script src="js/protocolos.js"></script>
 <script src="js/preguntas.js"></script>
 <script src="js/evaluacion.js"></script>
 <script src="js/certificado.js"></script>

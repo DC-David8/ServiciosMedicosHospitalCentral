@@ -43,3 +43,15 @@ const enVistaPrevia = () => {
   if (window.MODO_VISTA_PREVIA) return true;
   try { return window.self !== window.top; } catch (e) { return true; }
 };
+
+/** Edad en años en una fecha de referencia (ISO). Devuelve "" si no se puede calcular. */
+function edadEn(nacimiento, referencia) {
+  if (!nacimiento) return "";
+  const a = new Date(nacimiento), b = referencia ? new Date(referencia) : new Date();
+  let e = b.getFullYear() - a.getFullYear();
+  if (b.getMonth() < a.getMonth() || (b.getMonth() === a.getMonth() && b.getDate() < a.getDate())) e--;
+  return e >= 0 && e < 130 ? `${e} años` : "";
+}
+
+/** Une una lista en español: "a, b y c". */
+const unirEs = (arr) => (arr.length <= 1 ? arr.join("") : `${arr.slice(0, -1).join(", ")} y ${arr[arr.length - 1]}`);

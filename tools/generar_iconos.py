@@ -26,13 +26,14 @@ ROJO, ORO, GRIS = (215, 38, 46), (201, 165, 74), (84, 96, 110)
 
 # id: insignia (o None), color de la insignia, línea superior, título y subtítulo de la pantalla de arranque
 SERVICIOS = {
-    "hub":       dict(insignia=None,       titulo="SERVICIOS MÉDICOS", sub="Salud mental · Urgencias · Forense"),
-    "psico":     dict(insignia="psi",      titulo="PSICOTÉCNICO",      sub="LSPD · LSSD · FBI"),
-    "admin":     dict(insignia="candado",  titulo="EVALUADORES",       sub="Banco de preguntas"),
-    "parte":     dict(insignia="parte",    titulo="PARTE DE LESIONES", sub="Servicio de Urgencias"),
-    # Próximamente: arranque=False hasta que exista la página (solo se generan los iconos)
-    "defuncion": dict(insignia="defuncion", titulo="DEFUNCIÓN",        sub="Medicina Forense", arranque=False),
-    "autopsia":  dict(insignia="autopsia", titulo="AUTOPSIA",          sub="Medicina Forense", arranque=False),
+    "hub":         dict(insignia=None,       titulo="SERVICIOS MÉDICOS", sub="Hospital Central · EMS"),
+    "psico":       dict(insignia="psi",      titulo="PSICOTÉCNICO",      sub="LSPD · LSSD · FBI"),
+    "admin":       dict(insignia="candado",  titulo="EVALUADORES",       sub="Banco de preguntas"),
+    "parte":       dict(insignia="parte",    titulo="PARTE DE LESIONES", sub="Servicio de Urgencias"),
+    "cirugia":     dict(insignia=("simbolo", "✂", (15, 139, 141)),  titulo="CIRUGÍA",          sub="Informe quirúrgico"),
+    "ginecologia": dict(insignia=("simbolo", "♀", (194, 24, 91)),   titulo="GINECOLOGÍA",      sub="Ginecología y obstetricia"),
+    "forense":     dict(insignia="defuncion", titulo="MEDICINA FORENSE", sub="Defunción y autopsia"),
+    "rescate":     dict(insignia="aro",      titulo="BÚSQUEDA Y RESCATE", sub="Grupo de rescate"),
 }
 
 # Pantallas de iPhone en vertical: (ancho CSS, alto CSS, densidad)
@@ -77,6 +78,25 @@ def poner_logo(img, lado, cx, cy):
 def insignia(img, tipo, cx, cy, r):
     d = ImageDraw.Draw(img)
     borde = max(2, int(r * 0.12))
+    if isinstance(tipo, tuple) and tipo[0] == "simbolo":
+        _, glifo, color = tipo
+        d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=color, outline=(255, 255, 255), width=borde)
+        f = fuente("simbolo", r * 1.15)
+        w = d.textlength(glifo, font=f)
+        bb = d.textbbox((0, 0), glifo, font=f)
+        d.text((cx - w / 2, cy - (bb[1] + bb[3]) / 2), glifo, font=f, fill=(255, 255, 255))
+        return
+    if tipo == "aro":  # salvavidas
+        naranja = (227, 100, 20)
+        d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=(255, 255, 255), outline=naranja, width=borde)
+        ro, ri = r * 0.78, r * 0.38
+        for i in range(4):
+            a0 = i * 90 + 20
+            d.pieslice((cx - ro, cy - ro, cx + ro, cy + ro), a0, a0 + 50, fill=naranja)
+        d.ellipse((cx - ri, cy - ri, cx + ri, cy + ri), fill=(255, 255, 255))
+        d.ellipse((cx - ro, cy - ro, cx + ro, cy + ro), outline=naranja, width=max(2, int(r * 0.08)))
+        d.ellipse((cx - ri, cy - ri, cx + ri, cy + ri), outline=naranja, width=max(2, int(r * 0.08)))
+        return
     if tipo == "candado":
         d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=ORO, outline=(255, 255, 255), width=borde)
         bw, bh = r * 0.95, r * 0.72
