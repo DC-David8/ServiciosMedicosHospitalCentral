@@ -1,6 +1,6 @@
 /*
  * Parte médico de lesiones — formulario, valoración automática y generación del documento.
- * Depende de: hospital.js, certificado.js (fuentes), documento.js, parte-cert.js, pdf.js.
+ * Depende de: hospital.js, certificado.js (fuentes), documento.js, parte-cert.js, pdf.js, pegar-imagen.js.
  */
 
 // Tipos de lesión y días de curación orientativos según gravedad [leve, moderada, grave]
@@ -274,6 +274,7 @@ const SINTOMAS = ["Ansiedad", "Miedo a la autoridad", "Insomnio", "Llanto / labi
       paciente: {
         nombre: $("#nombre").value.trim(), nacimiento: $("#nacimiento").value,
         edad: edad($("#nacimiento").value, fa), sexo: $("#sexo").value, telefono: $("#telefono").value.trim(),
+        dni: fotos.valores.dni || "",
       },
       hechos: {
         fecha: $("#fecha-hechos").value, lugar: $("#lugar").value.trim(), tipoAgresor: radio("agresor"),
@@ -306,6 +307,8 @@ const SINTOMAS = ["Ansiedad", "Miedo a la autoridad", "Insomnio", "Llanto / labi
   }
 
   // ── Arranque ──
+  $("#campo-dni .ayuda").insertAdjacentHTML("beforebegin", campoImagenHTML("dni", "dni", "DNI del paciente"));
+  const fotos = activarImagenes({ raiz: $("#form-parte"), activo: () => !$("#vista-form").hidden, claves: () => ["dni"] });
   chips("#chips-mecanismo", "mecanismo", MECANISMOS);
   chips("#chips-prueba", "prueba", PRUEBAS);
   chips("#chips-trat", "trat", TRATAMIENTOS);
@@ -350,6 +353,7 @@ const SINTOMAS = ["Ansiedad", "Miedo a la autoridad", "Insomnio", "Llanto / labi
   $("#btn-editar").addEventListener("click", () => irA("form"));
   $("#btn-nuevo").addEventListener("click", () => {
     $("#form-parte").reset();
+    fotos.quitarTodas();
     $("#fecha-asistencia").value = ahoraLocal();
     iniciarMedico();
     lesiones = [{ zona: "", tipo: "", gravedad: 0, desc: "" }];

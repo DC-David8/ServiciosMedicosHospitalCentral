@@ -45,7 +45,7 @@ Cada respuesta puntúa de 0 a 3: **3** correcta, **2** aceptable, **1** poco ade
 
 Parte que el hospital entrega a un paciente agredido para que presente su denuncia.
 
-1. **Paciente:** nombre, nacimiento (calcula la edad), sexo y teléfono.
+1. **Paciente:** nombre, nacimiento (calcula la edad), sexo, teléfono y **DNI** (opcional: se pega el recorte con Ctrl + V, se arrastra o se elige el archivo; sale en el parte junto a los datos).
 2. **Hechos que refiere:** fecha, lugar, presunto agresor (agente de la ley con facción e identificación, civil o desconocido), mecanismo y relato.
 3. **Exploración física:** hasta 8 lesiones con zona, tipo y gravedad, numeradas sobre una figura frontal y posterior. Pruebas y tratamiento aplicado.
 4. **Estado psicológico y daño moral:** síntomas, intensidad y seguimiento psicológico.
@@ -101,6 +101,7 @@ Cada página se instala como app con su propio icono y pantalla de arranque: **H
 ├── js/documento.js            Compartido: cabecera, firma, pie y utilidades de los documentos
 ├── js/certificado.js          Fuentes y utilidades de dibujo + certificado del psicotécnico
 ├── js/pdf.js                  PDF de una o varias páginas sin librerías externas
+├── js/pegar-imagen.js         Campos de imagen: archivo, recorte pegado (Ctrl + V) o arrastrado
 ├── js/preguntas.js, js/evaluacion.js, js/app.js, js/admin.js   Psicotécnico
 ├── js/parte.js, js/parte-cert.js                                Parte de lesiones (y figura corporal)
 ├── tools/generar_iconos.py    Iconos y pantallas de arranque

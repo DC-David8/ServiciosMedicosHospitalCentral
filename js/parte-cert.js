@@ -99,9 +99,10 @@ function dibujarFigura(ctx, ox, oy, k, vista) {
 
 async function dibujarParte(canvas, d, recursos) {
   const srcFac = d.hechos.faccion && recursos.facciones ? recursos.facciones[d.hechos.faccion] : null;
-  const [logo, sello, escudo] = await Promise.all([
+  const [logo, sello, escudo, dni] = await Promise.all([
     cargarImagen(recursos.logo), cargarImagen(recursos.sello),
     srcFac ? cargarImagen(srcFac).catch(() => null) : Promise.resolve(null),
+    d.paciente.dni ? cargarImagen(d.paciente.dni).catch(() => null) : Promise.resolve(null),
   ]);
   await cargarFuentesCertificado();
 
@@ -117,13 +118,31 @@ async function dibujarParte(canvas, d, recursos) {
 
   // ── Paciente ──
   let y = titulo("DATOS DEL PACIENTE", 292);
-  fuente(36, PESO_TITULO, FUENTE_TITULO);
-  texto(d.paciente.nombre || "—", M, y + 46, { px: 36, peso: PESO_TITULO, fam: FUENTE_TITULO });
-  const cw = (W - 2 * M) / 3;
-  dato("Nacimiento", d.paciente.nacimiento ? `${fechaTexto(d.paciente.nacimiento)}${d.paciente.edad != null ? ` (${d.paciente.edad} años)` : ""}` : "—", M, y + 82, cw);
-  dato("Sexo", d.paciente.sexo === "F" ? "Femenino" : "Masculino", M + cw, y + 82, cw);
-  dato("Teléfono", d.paciente.telefono, M + 2 * cw, y + 82, cw);
-  y += 136;
+  const nacimiento = d.paciente.nacimiento ? `${fechaTexto(d.paciente.nacimiento)}${d.paciente.edad != null ? ` (${d.paciente.edad} años)` : ""}` : "—";
+  const sexo = d.paciente.sexo === "F" ? "Femenino" : "Masculino";
+  if (dni) {
+    // DNI a la derecha y datos en dos columnas a la izquierda
+    const esc = Math.min(270 / dni.width, 156 / dni.height, 2);
+    const iw = Math.round(dni.width * esc), ih = Math.round(dni.height * esc);
+    const ix = W - M - iw, iy = y + 18;
+    rect(ix - 1, iy - 1, iw + 2, ih + 2, 8, null, C.linea, 1.5);
+    ctx.save(); ctx.beginPath(); ctx.roundRect ? ctx.roundRect(ix, iy, iw, ih, 7) : ctx.rect(ix, iy, iw, ih); ctx.clip();
+    ctx.drawImage(dni, ix, iy, iw, ih); ctx.restore();
+    texto("DNI APORTADO POR EL PACIENTE", ix + iw / 2, iy + ih + 22, { px: 12, peso: "700", color: C.gris, align: "center", esp: 1.5 });
+    const lw = ix - 30 - M, cw = lw / 2;
+    texto(doc.recortar(d.paciente.nombre || "—", lw, 36, PESO_TITULO, FUENTE_TITULO), M, y + 46, { px: 36, peso: PESO_TITULO, fam: FUENTE_TITULO });
+    dato("Nacimiento", nacimiento, M, y + 82, cw);
+    dato("Sexo", sexo, M + cw, y + 82, cw);
+    dato("Teléfono", d.paciente.telefono, M, y + 146, cw);
+    y += Math.max(196, ih + 48);
+  } else {
+    texto(d.paciente.nombre || "—", M, y + 46, { px: 36, peso: PESO_TITULO, fam: FUENTE_TITULO });
+    const cw = (W - 2 * M) / 3;
+    dato("Nacimiento", nacimiento, M, y + 82, cw);
+    dato("Sexo", sexo, M + cw, y + 82, cw);
+    dato("Teléfono", d.paciente.telefono, M + 2 * cw, y + 82, cw);
+    y += 136;
+  }
 
   // ── Hechos ──
   y = titulo("HECHOS QUE REFIERE EL PACIENTE", y + 20);
@@ -250,8 +269,15 @@ async function dibujarParte(canvas, d, recursos) {
   y = byv + bh;
   texto("JUICIO CLÍNICO", M, y + 36, { px: 14, peso: "700", color: C.gris, esp: 2 });
   const limite = doc.limiteContenido;
-  const maxLin = Math.max(2, Math.floor((limite - (y + 64)) / 27) + 1);
-  y = parrafo(v.juicio, M, y + 64, W - 2 * M, { px: 18, lh: 27, max: maxLin });
+  // Si el juicio no cabe (p. ej. con DNI y muchas lesiones), se reduce un poco la letra antes de cortarlo
+  const lineasDe = (t, px, ancho) => { ctx.font = `400 ${px}px ${FUENTE_TEXTO}`; return partirTexto(ctx, t || "", ancho).length; };
+  let jpx = 18, jlh = 27;
+  for (const [px, lh] of [[18, 27], [17, 25], [16, 23], [15, 21]]) {
+    jpx = px; jlh = lh;
+    if (lineasDe(v.juicio, px, W - 2 * M) <= Math.floor((limite - (y + 64)) / lh) + 1) break;
+  }
+  const maxLin = Math.max(2, Math.floor((limite - (y + 64)) / jlh) + 1);
+  y = parrafo(v.juicio, M, y + 64, W - 2 * M, { px: jpx, lh: jlh, max: maxLin });
 
   // ── Facultativo y pie ──
   doc.firma({
