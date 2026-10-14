@@ -13,7 +13,14 @@ Herramientas web para el rol del Hospital Central en el servidor de FiveM **Jera
 
 Todos los documentos ocupan **una sola página**. Cada servicio tiene dos pestañas: **Documento** (formulario y generación) y **Protocolo IC** (los pasos registrados por el hospital, con cada comando `/me`, `/do`, `/e` o `/ems` listo para copiar). Los servicios que lo piden generan además el mensaje **/ems** ya relleno (anuncio de fallecimiento, aviso de salida de rescate).
 
-El portal (`index.html`) se dibuja a partir de `js/servicios.js`.
+### Home (centro de servicios)
+
+`index.html` + `js/home.js`. Cabecera con luces de ambulancia, ECG en movimiento, reloj y botón de **turno** (cuenta el tiempo en servicio). Debajo:
+
+- **Baldosas** de colores con cada servicio (color, nombre corto y palabras de búsqueda en `js/servicios.js`) y **buscador** (tecla `/`; Intro abre el primero).
+- **Recientes:** los últimos 8 documentos generados en ese navegador. *Abrir* vuelve al servicio con todos los datos cargados (DNI incluido) y, al regenerarlo, mantiene el mismo número. Lo gestiona `js/recientes.js`.
+- **Tu ficha:** nombre, cargo y firma del facultativo; es la misma que rellenan todos los servicios.
+- **Comandos /ems** de los protocolos, listos para copiar.
 
 ### Rellenado rápido
 
@@ -98,7 +105,7 @@ Cada página se instala como app con su propio icono y pantalla de arranque: **H
 ## Estructura
 
 ```
-├── index.html                 Portal de servicios
+├── index.html                 Home (centro de servicios)
 ├── psicotecnico.html          Psicotécnico policial (+ admin.html, acceso evaluadores)
 ├── parte.html                 Parte médico de lesiones
 ├── rescate.html, cirugia.html, ginecologia.html, forense.html   Servicios del motor común
@@ -115,6 +122,8 @@ Cada página se instala como app con su propio icono y pantalla de arranque: **H
 ├── js/pdf.js                  PDF de una o varias páginas sin librerías externas
 ├── js/pegar-imagen.js         Campos de imagen: archivo, recorte pegado (Ctrl + V) o arrastrado
 ├── js/rapido.js               Casos frecuentes y frases rápidas
+├── js/recientes.js            Documentos recientes (Home) y reabrirlos
+├── js/home.js                 Home: baldosas, buscador, turno, recientes, ficha y comandos
 ├── js/preguntas.js, js/evaluacion.js, js/app.js, js/admin.js   Psicotécnico
 ├── js/parte.js, js/parte-cert.js                                Parte de lesiones (y figura corporal)
 ├── tools/generar_iconos.py    Iconos y pantallas de arranque

@@ -327,7 +327,10 @@
     irA("certificado");
     $("#aviso-descarga").hidden = true;
     try {
-      await dibujarCertificado($("#lienzo"), datosCertificado(), RECURSOS);
+      const dc = datosCertificado();
+      // Documentos recientes (Home): solo se anota; el examen no se puede reabrir
+      if (typeof guardarReciente === "function") guardarReciente({ id: dc.referencia, servicio: "psicotecnico", titulo: "Psicotécnico", nombre: `${dc.nombre} · ${dc.faccion}`, numero: dc.apto ? "APTO" : "NO APTO", href: "psicotecnico.html" });
+      await dibujarCertificado($("#lienzo"), dc, RECURSOS);
     } catch (err) {
       $("#aviso-descarga").textContent = "No se pudieron cargar el logo o el sello. Comprueba que la carpeta assets está junto a index.html.";
       $("#aviso-descarga").hidden = false;

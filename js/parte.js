@@ -1,6 +1,6 @@
 /*
  * Parte médico de lesiones — formulario, valoración automática y generación del documento.
- * Depende de: hospital.js, certificado.js (fuentes), documento.js, parte-cert.js, pdf.js, pegar-imagen.js, rapido.js.
+ * Depende de: hospital.js, certificado.js (fuentes), documento.js, parte-cert.js, pdf.js, pegar-imagen.js, rapido.js, recientes.js.
  */
 
 // Tipos de lesión y días de curación orientativos según gravedad [leve, moderada, grave]
@@ -373,8 +373,34 @@ const SINTOMAS = ["Ansiedad", "Miedo a la autoridad", "Insomnio", "Llanto / labi
     };
     irA("parte");
     $("#aviso-descarga").hidden = true;
+    guardarReciente({ id: datosParte.numero, servicio: "parte", titulo: "Parte de lesiones", nombre: datosParte.paciente.nombre, numero: datosParte.numero, href: "parte.html", datos: instantanea() });
     try { await dibujarParte($("#lienzo"), datosParte, RECURSOS); }
     catch (err) { $("#aviso-descarga").textContent = "No se pudieron cargar las imágenes. Comprueba que la carpeta assets está junto a parte.html."; $("#aviso-descarga").hidden = false; }
+  }
+
+  // ── Documentos recientes: copia de todo el formulario para poder reabrirlo desde el Home ──
+  function instantanea() {
+    const campos = {};
+    $$("#form-parte input, #form-parte select, #form-parte textarea").forEach((el) => {
+      if (!el.id || el.closest(".lesion") || el.type === "file") return;
+      campos[el.id] = el.type === "checkbox" || el.type === "radio" ? el.checked : el.value;
+    });
+    return { campos, lesiones: lesiones.map((l) => ({ ...l })), editado: { ...editado }, numero: datosParte.numero, clave: datosParte._clave, dni: fotos.valores.dni || "" };
+  }
+  function restaurar(rec) {
+    const d = rec.datos;
+    Object.entries(d.campos || {}).forEach(([id, val]) => {
+      const el = document.getElementById(id); if (!el || el.closest(".lesion")) return;
+      if (el.type === "checkbox" || el.type === "radio") el.checked = !!val; else el.value = val;
+    });
+    $("#cargo").hidden = $("#cargo-sel").value !== OTRO;
+    lesiones = (d.lesiones || []).map((l) => ({ ...l }));
+    editado = { ...{ dias: false, impeditivos: false, pronostico: false, juicio: false }, ...(d.editado || {}) };
+    datosParte = { numero: d.numero, _clave: d.clave }; // al volver a generar se mantiene el número
+    pintarLesiones(); alternarAgresor(); recalcular(); marcarFrases($("#form-parte"));
+    if (d.dni) blobDeDataUrl(d.dni).then((b) => fotos.asignar("dni", b, "DNI del parte guardado")).catch(() => {});
+    $(".intro-parte").insertAdjacentHTML("afterend", `<p class="aviso-reciente" role="status">Reabierto: <b>${esc(rec.nombre)}</b> · ${esc(rec.numero)}. Cambia lo que necesites y vuelve a generarlo; se mantiene el mismo número.</p>`);
+    history.replaceState(null, "", location.pathname);
   }
 
   function irA(paso) {
@@ -454,4 +480,6 @@ const SINTOMAS = ["Ansiedad", "Miedo a la autoridad", "Insomnio", "Llanto / labi
     pintarLesiones(); alternarAgresor(); recalcular();
     irA("form"); $("#nombre").focus();
   });
+  const rec = recienteDeLaDireccion();
+  if (rec && rec.servicio === "parte" && rec.datos) restaurar(rec);
 })();

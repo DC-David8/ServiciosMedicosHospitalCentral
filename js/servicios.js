@@ -4,7 +4,7 @@
  *
  * Para añadir un servicio: crea su esquema en js/servicios/<id>.js, genera el icono
  * (tools/generar_iconos.py <id>) y la página (tools/crear_servicio.py), y añádelo aquí.
- * Con estado "pronto" aparece en gris como Próximamente.
+ * Con estado "pronto" aparece en gris como Próximamente. corto, color, areaCorta y claves (búsqueda) son para el Home.
  */
 
 const AREAS = [
@@ -18,6 +18,7 @@ const AREAS = [
 const SERVICIOS_HOSPITAL = [
   {
     id: "psicotecnico", area: "salud-mental", estado: "activo",
+    corto: "Psicotécnico", color: "#2A55B8", areaCorta: "Salud mental", claves: "psicotecnico examen policia lspd lssd fbi sheriff agente certificado aptitud",
     nombre: "Psicotécnico policial",
     desc: "Evaluación biométrica y examen de 10 a 60 preguntas basado en la normativa del servidor para LSPD, LSSD y FBI.",
     documento: "Certificado de aptitud",
@@ -25,6 +26,7 @@ const SERVICIOS_HOSPITAL = [
   },
   {
     id: "parte", area: "urgencias", estado: "activo",
+    corto: "Parte de lesiones", color: "#C8232C", areaCorta: "Urgencias", claves: "parte lesiones denuncia golpes taser esposas porra agresion pelea bala disparo",
     nombre: "Parte médico de lesiones",
     desc: "Lesiones, daño moral y valoración médico-legal para que el paciente presente su denuncia.",
     documento: "Parte de lesiones",
@@ -32,6 +34,7 @@ const SERVICIOS_HOSPITAL = [
   },
   {
     id: "rescate", area: "urgencias", estado: "activo",
+    corto: "Búsqueda y rescate", color: "#D55A0F", areaCorta: "Rescate", claves: "rescate busqueda sar montaña mar senderista barranco helicoptero naufrago desaparecido",
     nombre: "Búsqueda y rescate",
     desc: "Aviso /ems de salida, equipo con comprobación de la dotación mínima, búsqueda y víctimas.",
     documento: "Informe de operación",
@@ -39,6 +42,7 @@ const SERVICIOS_HOSPITAL = [
   },
   {
     id: "cirugia", area: "cirugia", estado: "activo",
+    corto: "Cirugía general", color: "#0E7F81", areaCorta: "Cirugía", claves: "cirugia quirurgico operacion bala arma blanca fractura rinoplastia estetica rasgos",
     nombre: "Cirugía general",
     desc: "Cirugía de salud o traumática y cirugía estética: anestesia, procedimiento, cierre y postoperatorio.",
     documento: "Informe quirúrgico",
@@ -46,6 +50,7 @@ const SERVICIOS_HOSPITAL = [
   },
   {
     id: "ginecologia", area: "ginecologia", estado: "activo",
+    corto: "Ginecología", color: "#B0175A", areaCorta: "Ginecología", claves: "ginecologia embarazo ecografia revision quiste infeccion obstetricia",
     nombre: "Consulta de ginecología",
     desc: "Revisión, molestias o seguimiento de embarazo, con la captura de la ecografía.",
     documento: "Informe de consulta",
@@ -53,6 +58,7 @@ const SERVICIOS_HOSPITAL = [
   },
   {
     id: "forense", area: "forense", estado: "activo",
+    corto: "Defunción y autopsia", color: "#3E4A55", areaCorta: "Forense", claves: "forense autopsia defuncion ck muerte fallecido cadaver morgue",
     nombre: "Defunción y autopsia (CK)",
     desc: "Constatación de la muerte, examen externo e interno, causa y destino del cuerpo, con el anuncio /ems.",
     documento: "Certificado de defunción + Informe de autopsia",

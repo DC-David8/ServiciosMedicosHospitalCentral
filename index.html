@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Servicios Médicos · Hospital Central</title>
-<meta name="description" content="Servicios médicos del Hospital Central (EMS): psicotécnico, parte de lesiones y medicina forense.">
+<meta name="description" content="Centro de servicios del Hospital Central (EMS): psicotécnico, parte de lesiones, rescate, cirugía, ginecología y medicina forense.">
 <!-- App web (inicio en iPhone/Android) -->
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#16304B">
@@ -33,53 +33,73 @@
 </head>
 <body>
 <!--APP-->
-<header class="cabecera">
-  <div class="cabecera-in">
-    <img class="cabecera-logo" src="assets/logo-ems.png" alt="Logotipo EMS" width="56" height="56">
-    <div class="cabecera-txt">
-      <span class="cabecera-org">Hospital Central · EMS</span>
-      <h1>Servicios médicos</h1>
+<div class="h-sirena" aria-hidden="true"></div>
+<header class="h-cab">
+  <div class="h-cab-in">
+    <div class="h-cab-fila">
+      <img class="h-logo" src="assets/logo-ems.png" alt="Logotipo EMS" width="52" height="52">
+      <div class="h-titulo"><span>Hospital Central · EMS</span><h1>Centro de servicios</h1></div>
+      <div class="h-turno">
+        <span class="h-reloj" id="h-reloj" aria-label="Hora">--:--</span>
+        <button type="button" class="h-btn-turno fuera" id="h-turno" aria-live="polite">Entrar de servicio</button>
+      </div>
     </div>
   </div>
+  <canvas class="h-ecg" id="h-ecg" height="44" aria-hidden="true"></canvas>
 </header>
 
-<main class="contenedor portal">
-  <p class="portal-intro">Elige el servicio que vas a realizar. Cada uno genera su documento oficial del Hospital Central en PNG o PDF.</p>
-  <div id="areas" class="areas"></div>
+<main class="h-cuerpo">
+  <div class="h-saludo">
+    <h2 id="h-saludo">Hola</h2>
+    <label class="h-buscar" for="h-buscar">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="h-buscar" type="search" autocomplete="off" placeholder="Buscar: parte, bala, embarazo, autopsia…" aria-describedby="h-buscar-info">
+      <kbd aria-hidden="true">/</kbd>
+    </label>
+  </div>
+  <p class="h-buscar-info" id="h-buscar-info" aria-live="polite"></p>
+
+  <div class="h-rejilla">
+    <nav class="h-baldosas" id="h-baldosas" aria-label="Servicios"></nav>
+
+    <aside class="h-lateral">
+      <section class="h-panel" aria-labelledby="h-rec-tit">
+        <h3 id="h-rec-tit">Recientes <button type="button" class="h-enlace" id="h-rec-borrar" hidden>Borrar</button></h3>
+        <div id="h-recientes"></div>
+      </section>
+
+      <section class="h-panel h-ficha" aria-labelledby="h-ficha-tit">
+        <h3 id="h-ficha-tit">Tu ficha <button type="button" class="h-enlace" id="h-ficha-editar">Editar</button></h3>
+        <div id="h-ficha-ver"></div>
+        <form id="h-ficha-form" class="h-ficha-form" hidden>
+          <label for="hf-nombre">Nombre y apellidos</label>
+          <input id="hf-nombre" autocomplete="off" placeholder="Dr. Nombre Apellido" required>
+          <label for="hf-cargo">Cargo</label>
+          <select id="hf-cargo"></select>
+          <input id="hf-cargo-otro" autocomplete="off" placeholder="Escribe el cargo" aria-label="Cargo (escrito a mano)" hidden>
+          <label for="hf-firma">Firma <small>(si la dejas vacía, se usa el nombre)</small></label>
+          <input id="hf-firma" autocomplete="off" placeholder="Igual que el nombre">
+          <div class="h-ficha-acc"><button type="submit" class="h-btn">Guardar</button><button type="button" class="h-btn h-btn-sec" id="hf-cancelar">Cancelar</button></div>
+        </form>
+        <p class="h-nota">Se usa en todos los documentos de este navegador.</p>
+      </section>
+
+      <section class="h-panel" aria-labelledby="h-cmd-tit">
+        <h3 id="h-cmd-tit">Comandos /ems</h3>
+        <div id="h-comandos"></div>
+      </section>
+    </aside>
+  </div>
   <noscript><p class="aviso">Activa JavaScript para usar los servicios.</p></noscript>
 </main>
 
 <footer class="pie">Hospital Central · Uso exclusivo de rol · <a href="admin.html">Acceso evaluadores</a></footer>
 <!--/APP-->
 
+<script src="js/hospital.js"></script>
 <script src="js/servicios.js"></script>
-<script>
-(() => {
-  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  document.getElementById("areas").innerHTML = AREAS.map((a) => {
-    const lista = SERVICIOS_HOSPITAL.filter((s) => s.area === a.id);
-    if (!lista.length) return "";
-    return `<section class="area">
-      <h2 class="area-titulo">${esc(a.nombre)}</h2>
-      <div class="servicios">${lista.map((s) => {
-        const activo = s.estado === "activo";
-        const interior = `
-          <img class="servicio-icono" src="${esc(s.icono)}" alt="" width="64" height="64">
-          <span class="servicio-txt">
-            <span class="servicio-nombre">${esc(s.nombre)}</span>
-            <span class="servicio-desc">${esc(s.desc)}</span>
-            <span class="servicio-pie">
-              <span class="servicio-doc">${esc(s.documento)}</span>
-              ${activo ? `<span class="servicio-ir">Abrir →</span>` : `<span class="servicio-pronto">Próximamente</span>`}
-            </span>
-          </span>`;
-        return activo
-          ? `<a class="servicio" href="${esc(s.href)}">${interior}</a>`
-          : `<div class="servicio es-pronto" aria-disabled="true">${interior}</div>`;
-      }).join("")}</div>
-    </section>`;
-  }).join("");
-})();
-</script>
+<script src="js/protocolos.js"></script>
+<script src="js/recientes.js"></script>
+<script src="js/home.js"></script>
 </body>
 </html>

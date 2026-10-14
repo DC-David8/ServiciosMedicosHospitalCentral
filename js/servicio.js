@@ -253,6 +253,10 @@
     S.documentos.forEach((d) => { if (!datos._numeros[d.id]) datos._numeros[d.id] = numeroDocumento(d.prefijo, fecha, v[S.campoNombre]); });
     irA("doc");
     await pintarDocumento();
+    // Documentos recientes (Home): se guarda todo para poder reabrirlo
+    const d0 = S.documentos[0];
+    guardarReciente({ id: datos._numeros[d0.id], servicio: S.id, titulo: S.nombre, nombre: v[S.campoNombre] || "", numero: datos._numeros[d0.id],
+      href: location.pathname.split("/").pop() || `${S.id}.html`, datos: { ...datos, conclusionEditada } });
   }
 
   async function pintarDocumento() {
@@ -385,4 +389,18 @@
     irA(b.dataset.tab === "protocolo" ? "protocolo" : "form");
   }));
   if (location.hash === "#protocolo" && S.protocolo) irA("protocolo");
+  // ── Reabrir un documento reciente (desde el Home: <servicio>.html#reciente-<id>) ──
+  const rec = recienteDeLaDireccion();
+  if (rec && rec.datos && rec.servicio === S.id) {
+    const d = rec.datos;
+    campos().forEach((c) => {
+      if (c.tipo === "imagen") { if (d[c.id]) blobDeDataUrl(d[c.id]).then((b) => fotos.asignar(c.id, b, "Imagen del documento guardado")).catch(() => {}); }
+      else if (c.tipo !== "calculado" && d[c.id] !== undefined) escribir(c.id, d[c.id]);
+    });
+    datos = { ...d }; delete datos.conclusionEditada; // conserva el número del documento
+    actualizar();
+    if (d.conclusionEditada && d.conclusion) { conclusionEditada = true; $("#f-conclusion").value = d.conclusion; }
+    $(".intro-parte").insertAdjacentHTML("afterend", `<p class="aviso-reciente" role="status">Reabierto: <b>${esc(rec.nombre || rec.titulo)}</b> · ${esc(rec.numero || "")}. Cambia lo que necesites y vuelve a generarlo; se mantiene el mismo número.</p>`);
+    history.replaceState(null, "", location.pathname);
+  }
 })();
