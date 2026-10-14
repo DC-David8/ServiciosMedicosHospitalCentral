@@ -21,6 +21,7 @@ window.SERVICIO = (() => {
     documentos: [{
       id: "informe", nombre: "Informe de consulta", titulo: "INFORME DE CONSULTA",
       org: "HOSPITAL CENTRAL · GINECOLOGÍA Y OBSTETRICIA", subtitulo: "Exploración, ecografía y seguimiento",
+      unaPagina: true, agrupar: true,
       prefijo: "GIN", etiquetaNumero: "Nº DE INFORME", archivo: "Informe_ginecologia", pie: "HOSPITAL CENTRAL · INFORME MÉDICO",
       fechaCabecera: (v) => fechaHoraTexto(v.fecha),
       nota: "Informe confidencial. Preséntelo en su próxima revisión.",
@@ -42,7 +43,7 @@ window.SERVICIO = (() => {
       { id: "ecografia", titulo: "Ecografía", campos: [
         { id: "hallazgo", tipo: "select", etiqueta: "Hallazgo principal", opciones: ["Útero sano", "Desarrollo fetal normal", "Quiste pequeño", "Otro hallazgo"] },
         { id: "eco_desc", tipo: "area", etiqueta: "Descripción", opcional: true, placeholder: "Lo que se observa en el monitor" },
-        { id: "captura", tipo: "imagen", etiqueta: "Captura de la ecografía", opcional: true, ayuda: "Sube una captura del rol para adjuntarla al informe." },
+        { id: "captura", tipo: "imagen", etiqueta: "Captura de la ecografía", opcional: true, lateral: { ancho: 400, alto: 300, textos: true }, pieDoc: "Captura de la ecografía", ayuda: "Pega el recorte de la ecografía (Ctrl + V) o sube la captura. Sale junto a la descripción." },
       ] },
       { id: "embarazo", titulo: "Seguimiento de embarazo", si: (v) => v.motivo === EMB, campos: [
         { id: "semanas", tipo: "numero", etiqueta: "Semanas de gestación", min: 1, maxv: 42, paso: 1 },

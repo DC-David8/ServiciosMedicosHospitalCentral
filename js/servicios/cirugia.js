@@ -18,6 +18,7 @@ window.SERVICIO = (() => {
     documentos: [{
       id: "informe", nombre: "Informe quirúrgico", titulo: "INFORME QUIRÚRGICO",
       org: "HOSPITAL CENTRAL · CIRUGÍA GENERAL", subtitulo: "Intervención, cierre y postoperatorio",
+      unaPagina: true, agrupar: true,
       prefijo: "QX", etiquetaNumero: "Nº DE INFORME", archivo: "Informe_quirurgico", pie: "HOSPITAL CENTRAL · INFORME MÉDICO",
       fechaCabecera: (v) => fechaHoraTexto(v.fecha),
       nota: "Informe médico emitido tras la intervención. Consérvelo junto a su historial clínico.",
@@ -29,7 +30,7 @@ window.SERVICIO = (() => {
         { id: "edad", tipo: "calculado", etiqueta: "Edad", calc: (v) => edadEn(v.nacimiento, v.fecha) },
         { id: "sexo", tipo: "select", etiqueta: "Sexo", opciones: ["Masculino", "Femenino"], valor: "Masculino" },
         { id: "telefono", tipo: "texto", etiqueta: "Teléfono", opcional: true, placeholder: "Número de contacto" },
-        { id: "foto_dni", tipo: "imagen", etiqueta: "Foto del DNI", opcional: true, ayuda: "El protocolo pide adjuntar la foto del DNI al informe médico." },
+        { id: "foto_dni", tipo: "imagen", etiqueta: "Foto del DNI", opcional: true, lateral: true, pieDoc: "DNI del paciente", ayuda: "El protocolo pide adjuntar la foto del DNI al informe médico. Sale junto a los datos del paciente." },
       ] },
       { id: "intervencion", titulo: "Intervención", campos: [
         { id: "fecha", tipo: "fechahora", etiqueta: "Fecha y hora", req: true, valor: "ahora" },

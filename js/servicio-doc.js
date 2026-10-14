@@ -53,39 +53,50 @@ async function dibujarServicio(servicio, docDef, v, recursos) {
       if (cadena) campos = campos.filter((c) => !s.cadena.campos.includes(c.id) && c.id !== s.cadena.lateral);
     }
     const contenido = [];
+    const diferidos = []; // con docDef.agrupar, los bloques anchos van después de las filas de datos cortos
     let fila = [];
     const cerrarFila = () => { if (fila.length) { contenido.push({ tipo: "fila", campos: fila }); fila = []; } };
-    // Imagen «lateral» (p. ej. el DNI): va a la derecha del nombre y los datos cortos de la sección
+    const otro = (k) => { if (docDef.agrupar) diferidos.push(k); else { cerrarFila(); contenido.push(k); } };
+    // Imagen «lateral» (p. ej. el DNI): va a la derecha del nombre y los datos cortos de la sección.
+    // lateral: { ancho, alto, textos: true } ajusta el tamaño y mete también los textos largos a la izquierda.
     const lat = campos.find((c) => c.tipo === "imagen" && c.lateral && imagenes[c.id]);
-    const ficha = lat ? { tipo: "ficha", c: lat, im: imagenes[lat.id], titular: "", datos: [] } : null;
+    const latOpt = lat && typeof lat.lateral === "object" ? lat.lateral : {};
+    const ficha = lat ? { tipo: "ficha", c: lat, im: imagenes[lat.id], titular: "", datos: [], textos: [], opt: latOpt } : null;
     for (const c of campos) {
       if (ficha && c === lat) continue;
+      if (ficha && latOpt.textos && (c.tipo === "area" || ((GRUPO_CORTO.includes(c.tipo) || c.tipo === "chips") && textoCampo(c, v).length > 34))) {
+        const t = textoCampo(c, v); if (t) ficha.textos.push({ c, t });
+        continue;
+      }
       if (ficha && (c.doc === "titular" || (GRUPO_CORTO.includes(c.tipo) && c.doc !== "ancho"))) {
         const t = textoCampo(c, v); if (!t) continue;
         if (c.doc === "titular") ficha.titular = t;
-        else if (t.length > 34) { cerrarFila(); contenido.push({ tipo: "ancho", c, t }); }
+        else if (t.length > 34) otro({ tipo: "ancho", c, t });
         else ficha.datos.push({ c, t });
         continue;
       }
       if (c.tipo === "zonas") {
-        cerrarFila();
         const opt = (docDef.zonas || {})[c.id] || {};
         let l = (v[c.id] || []).filter((z) => z.zona && z.tipo);
         if (opt.soloDestacados) l = l.filter((z) => z.destacado);
-        if (l.length) contenido.push({ tipo: "zonas", c, lista: l, opt });
+        if (l.length) otro({ tipo: "zonas", c, lista: l, opt }); else if (!docDef.agrupar) cerrarFila();
         continue;
       }
-      if (c.tipo === "equipo") { cerrarFila(); const l = (v[c.id] || []).filter((m) => m.nombre); if (l.length) contenido.push({ tipo: "equipo", c, lista: l }); continue; }
-      if (c.tipo === "imagen") { cerrarFila(); if (imagenes[c.id]) contenido.push({ tipo: "imagen", c, im: imagenes[c.id] }); continue; }
+      if (c.tipo === "equipo") { const l = (v[c.id] || []).filter((m) => m.nombre); if (l.length) otro({ tipo: "equipo", c, lista: l }); else if (!docDef.agrupar) cerrarFila(); continue; }
+      if (c.tipo === "imagen") { if (imagenes[c.id]) otro({ tipo: "imagen", c, im: imagenes[c.id] }); else if (!docDef.agrupar) cerrarFila(); continue; }
       const t = textoCampo(c, v);
       if (!t) continue;
       if (c.doc === "titular") { cerrarFila(); contenido.push({ tipo: "titular", t }); continue; }
-      if (c.tipo === "area") { cerrarFila(); contenido.push({ tipo: "area", c, t }); continue; }
-      if (c.tipo === "chips" && !docDef.chipsEnLinea) { cerrarFila(); contenido.push({ tipo: "chips", c, lista: v[c.id] }); continue; }
-      if (t.length > 34) { cerrarFila(); contenido.push({ tipo: "ancho", c, t }); continue; }
-      fila.push({ c, t }); if (fila.length === 3) cerrarFila();
+      if (c.tipo === "area") { otro({ tipo: "area", c, t }); continue; }
+      if (c.tipo === "chips" && !docDef.chipsEnLinea) { otro({ tipo: "chips", c, lista: v[c.id] }); continue; }
+      // Con docDef.agrupar, un texto mediano ocupa dos de las tres columnas de la fila
+      const span = t.length <= 34 ? 1 : docDef.agrupar && t.length <= 70 ? 2 : 0;
+      if (!span) { otro({ tipo: "ancho", c, t }); continue; }
+      if (fila.reduce((a2, f) => a2 + f.span, 0) + span > 3) cerrarFila();
+      fila.push({ c, t, span }); if (fila.reduce((a2, f) => a2 + f.span, 0) === 3) cerrarFila();
     }
     cerrarFila();
+    contenido.push(...diferidos);
     if (ficha) contenido.unshift(ficha);
     if (cadena) contenido.push(cadena);
     if (!contenido.length) continue;
@@ -94,11 +105,15 @@ async function dibujarServicio(servicio, docDef, v, recursos) {
     anadir({ alto: 58, titulo: true, dibujar: (doc, y) => doc.titulo(tituloSec.toUpperCase(), y + 30) });
     for (const k of contenido) {
       if (k.tipo === "ficha") {
-        const esc = Math.min(300 / k.im.width, 176 / k.im.height, 2);
+        const esc = Math.min((k.opt.ancho || 300) / k.im.width, (k.opt.alto || 176) / k.im.height, 2);
         const iw = Math.round(k.im.width * esc), ih = Math.round(k.im.height * esc);
         const ix = W - M - iw, lw = ix - 30 - M, cw = lw / 2;
         const top = k.titular ? 54 : 0, filas = Math.ceil(k.datos.length / 2);
-        anadir({ alto: Math.max(top + filas * 64, ih + 46), dibujar: (doc, y) => {
+        const txt = k.textos.map((x) => ({ ...x, r: lineas(x.t, 19, lw).slice(0, 8) }));
+        const altoTxt = txt.reduce((a2, x) => a2 + 36 + x.r.length * 26 + 10, 0);
+        anadir({ alto: Math.max(top + filas * 64 + altoTxt, ih + 46), dibujar: (doc, y) => {
+          let ty = y + top + filas * 64;
+          txt.forEach((x) => { etiqueta(doc, x.c.etiquetaDoc || x.c.etiqueta, ty + 18); doc.parrafo(x.t, M, ty + 46, lw, { px: 19, lh: 26, max: 8 }); ty += 36 + x.r.length * 26 + 10; });
           doc.rect(ix - 1, y + 11, iw + 2, ih + 2, 8, null, colores.linea, 1.5);
           doc.ctx.save(); doc.ctx.beginPath(); doc.ctx.roundRect ? doc.ctx.roundRect(ix, y + 12, iw, ih, 7) : doc.ctx.rect(ix, y + 12, iw, ih); doc.ctx.clip();
           doc.ctx.drawImage(k.im, ix, y + 12, iw, ih); doc.ctx.restore();
@@ -130,13 +145,14 @@ async function dibujarServicio(servicio, docDef, v, recursos) {
       } else if (k.tipo === "titular") anadir({ alto: 54, dibujar: (doc, y) => doc.texto(doc.recortar(k.t, ANCHO, 36, PESO_TITULO, FUENTE_TITULO), M, y + 38, { px: 36, peso: PESO_TITULO, fam: FUENTE_TITULO }) });
       else if (k.tipo === "fila") {
         const cw = ANCHO / 3;
-        anadir({ alto: 64, dibujar: (doc, y) => k.campos.forEach((f, i) => doc.dato(f.c.etiquetaDoc || f.c.etiqueta, f.t, M + i * cw, y + 18, cw)) });
+        anadir({ alto: 64, dibujar: (doc, y) => { let col = 0; k.campos.forEach((f) => { doc.dato(f.c.etiquetaDoc || f.c.etiqueta, f.t, M + col * cw, y + 18, cw * (f.span || 1)); col += f.span || 1; }); } });
       } else if (k.tipo === "ancho") {
         const r = lineas(k.t, 21, ANCHO).slice(0, 3);
         anadir({ alto: 30 + r.length * 28 + 8, dibujar: (doc, y) => { etiqueta(doc, k.c.etiquetaDoc || k.c.etiqueta, y + 18); doc.parrafo(k.t, M, y + 48, ANCHO, { px: 21, lh: 28, max: 3 }); } });
       } else if (k.tipo === "area") {
-        const r = lineas(k.t, 20, ANCHO).slice(0, 14);
-        anadir({ alto: 30 + r.length * 28 + 10, dibujar: (doc, y) => { etiqueta(doc, k.c.etiquetaDoc || k.c.etiqueta, y + 18); doc.parrafo(k.t, M, y + 48, ANCHO, { px: 20, lh: 28, max: 14 }); } });
+        const maxA = docDef.agrupar ? 6 : 14; // en los informes compactos, como mucho 6 líneas por texto
+        const r = lineas(k.t, 20, ANCHO).slice(0, maxA);
+        anadir({ alto: 30 + r.length * 28 + 10, dibujar: (doc, y) => { etiqueta(doc, k.c.etiquetaDoc || k.c.etiqueta, y + 18); doc.parrafo(k.t, M, y + 48, ANCHO, { px: 20, lh: 28, max: maxA }); } });
       } else if (k.tipo === "chips") {
         med.font = `700 17px ${FUENTE_TEXTO}`;
         let x = M, filas = 1;
@@ -195,19 +211,20 @@ async function dibujarServicio(servicio, docDef, v, recursos) {
 
   // Conclusión / resumen
   if (docDef.resumen !== false && v.conclusion && v.conclusion.trim()) {
-    const r = lineas(v.conclusion, 19, ANCHO).slice(0, 18);
+    const maxR = docDef.agrupar ? 10 : 18;
+    const r = lineas(v.conclusion, 19, ANCHO).slice(0, maxR);
     anadir({ alto: 58, titulo: true, dibujar: (doc, y) => doc.titulo((servicio.tituloResumen || "CONCLUSIÓN").toUpperCase(), y + 30) });
-    anadir({ alto: 20 + r.length * 28, dibujar: (doc, y) => doc.parrafo(v.conclusion, M, y + 26, ANCHO, { px: 19, lh: 28, max: 18 }) });
+    anadir({ alto: 20 + r.length * 28, dibujar: (doc, y) => doc.parrafo(v.conclusion, M, y + 26, ANCHO, { px: 19, lh: 28, max: maxR }) });
   }
 
   // ── Paginación ──
   const INICIO1 = 292, INICIO2 = 172, LIMITE = H - 104, HUECO = 10, FIRMA = H - 262 - 18;
-  // Documentos de una sola página: si el contenido no cabe, se dibuja algo más pequeño (hasta un 78 %) antes de partirlo
+  // Documentos de una sola página: si el contenido no cabe, se dibuja algo más pequeño (hasta un 78 %, o 72 % con agrupar) antes de partirlo
   let escala = 1;
   const total = bloques.reduce((t, b) => t + b.alto + HUECO, 0) - HUECO;
   if (docDef.unaPagina && INICIO1 + total > FIRMA) {
     const e = (FIRMA - INICIO1) / total;
-    if (e >= 0.78) escala = e;
+    if (e >= (docDef.agrupar ? 0.72 : 0.78)) escala = e;
   }
   const paginas = [[]];
   let y = INICIO1;
@@ -228,6 +245,7 @@ async function dibujarServicio(servicio, docDef, v, recursos) {
   const fechaCab = docDef.fechaCabecera ? docDef.fechaCabecera(v) : "";
   return paginas.map((items, p) => {
     const canvas = document.createElement("canvas");
+    canvas.dataset.escala = escala.toFixed(3);
     const doc = crearDocumento(canvas, { colores });
     if (p === 0) doc.cabecera({ logo, org: docDef.org, titulo: docDef.titulo, subtitulo: docDef.subtitulo, etiquetaNumero: docDef.etiquetaNumero || "Nº DE DOCUMENTO", numero, fecha: fechaCab });
     else doc.cabeceraCompacta({ logo, titulo: docDef.titulo, numero });

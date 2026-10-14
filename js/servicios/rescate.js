@@ -34,6 +34,7 @@ window.SERVICIO = (() => {
     documentos: [{
       id: "informe", nombre: "Informe de operación", titulo: "INFORME DE BÚSQUEDA Y RESCATE",
       org: "HOSPITAL CENTRAL · GRUPO DE BÚSQUEDA Y RESCATE", subtitulo: "Aviso, equipo, búsqueda y víctimas",
+      unaPagina: true, agrupar: true, chipsEnLinea: true,
       prefijo: "SAR", etiquetaNumero: "Nº DE OPERACIÓN", archivo: "Informe_rescate", pie: "HOSPITAL CENTRAL · INFORME DE OPERACIÓN",
       fechaCabecera: (v) => fechaHoraTexto(v.fecha),
       nota: "Informe interno del Grupo de Búsqueda y Rescate del Hospital Central.",
