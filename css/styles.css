@@ -383,3 +383,25 @@ a.servicio:focus-visible { outline: 3px solid var(--accent-2); outline-offset: 2
 }
 .protocolo-plegable summary { cursor: pointer; font: 700 12px/1 var(--f-body); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
 .protocolo-plegable[open] summary { margin-bottom: 6px; }
+
+/* ── Rellenado rápido: casos frecuentes, frases y «Otro» ── */
+.casos { margin: 0 0 18px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: var(--sombra); }
+.casos-cab h2 { margin: 0 0 4px; font: 600 12px/1.2 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.casos-cab p { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+.casos-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
+.caso { display: flex; flex-direction: column; gap: 2px; text-align: left; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); color: var(--ink); cursor: pointer; font: inherit; transition: border-color .12s, background .12s; }
+.caso b { font-size: 14px; }
+.caso span { font-size: 12px; color: var(--muted); line-height: 1.35; }
+.caso:hover { border-color: var(--accent-2); }
+.caso:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+.caso.activo { border-color: var(--accent-2); background: color-mix(in srgb, var(--accent-2) 12%, var(--surface)); }
+.casos-aviso { margin: 10px 0 0; min-height: 1em; color: var(--ok); }
+.frases { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.frase { padding: 5px 10px; border: 1px dashed var(--line); border-radius: 999px; background: transparent; color: var(--muted); font: 500 12.5px/1.25 var(--f-body, inherit); cursor: pointer; text-align: left; }
+.frase::before { content: "+ "; font-weight: 700; }
+.frase:hover { border-color: var(--accent-2); color: var(--ink); }
+.frase.activa { border-style: solid; border-color: var(--accent-2); background: color-mix(in srgb, var(--accent-2) 14%, var(--surface)); color: var(--ink); }
+.frase.activa::before { content: "✓ "; }
+.frase:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 1px; }
+.otro-texto { margin-top: 8px; }
+@media (max-width: 620px) { .casos-lista { grid-template-columns: 1fr 1fr; } .caso span { display: none; } }

@@ -77,8 +77,8 @@
         <div class="rejilla">
           <label class="campo"><span class="etiqueta">Fecha y hora de los hechos</span>
             <input id="fecha-hechos" type="datetime-local"></label>
-          <label class="campo"><span class="etiqueta">Lugar</span>
-            <input id="lugar" autocomplete="off" placeholder="Dónde ocurrió"></label>
+          <div class="campo"><label class="etiqueta" for="lugar">Lugar</label>
+            <input id="lugar" autocomplete="off" placeholder="Dónde ocurrió"><div id="frases-lugar"></div></div>
           <div class="campo campo-ancho">
             <span class="etiqueta" id="lbl-agresor">Presunto agresor</span>
             <div class="segmentos tres" role="radiogroup" aria-labelledby="lbl-agresor">
@@ -97,8 +97,8 @@
             <span class="etiqueta">Mecanismo que refiere</span>
             <div class="chips" id="chips-mecanismo"></div>
           </div>
-          <label class="campo campo-ancho"><span class="etiqueta">Relato del paciente</span>
-            <textarea id="relato" rows="3" maxlength="320" placeholder="Lo que cuenta el paciente, con sus palabras"></textarea></label>
+          <div class="campo campo-ancho"><label class="etiqueta" for="relato">Relato del paciente</label>
+            <textarea id="relato" rows="3" maxlength="320" placeholder="Lo que cuenta el paciente, con sus palabras (o pulsa las frases de abajo)"></textarea><div id="frases-relato"></div></div>
         </div>
       </fieldset>
 
@@ -195,6 +195,7 @@
 <script src="js/parte-cert.js"></script>
 <script src="js/pdf.js"></script>
 <script src="js/pegar-imagen.js"></script>
+<script src="js/rapido.js"></script>
 <script src="js/parte.js"></script>
 </body>
 </html>

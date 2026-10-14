@@ -7,6 +7,9 @@
  * imagen, calculado, zonas (hallazgos sobre la figura corporal) y equipo (personal de la operación).
  * Opciones comunes: id, etiqueta, req, ancho, valor (inicial: "hoy" / "ahora" para fechas), si(v),
  * placeholder, ayuda, unidad, opciones, enDoc:false, etiquetaDoc, doc:"titular".
+ * Rellenado rápido (js/rapido.js): frases (lista o función (v) → lista) en texto y area, con
+ * modoFrases:"reemplazar" para valores sueltos; select con otro:true (añade «Otro» con texto libre);
+ * fechas "+30d" (hoy + 30 días); S.casos [{ nombre, desc, valores }] y S.conservar [ids que no toca un caso].
  */
 (() => {
   const S = window.SERVICIO;
@@ -30,19 +33,21 @@
 
   // ── Construcción del formulario ──
   const etiquetaHTML = (c) => `${esc(c.etiqueta)}${c.unidad ? ` <small>(${esc(c.unidad)})</small>` : ""}${!c.req && c.opcional ? " <small>(opcional)</small>" : ""}`;
+  const slotFrases = (c) => (c.frases ? `<div class="frases-slot" data-slot="${c.id}"></div>` : "");
+  const frasesDe = (c, v) => (typeof c.frases === "function" ? c.frases(v) : c.frases) || [];
   function htmlCampo(c) {
     const id = `f-${c.id}`, ayuda = c.ayuda ? `<p class="ayuda">${esc(c.ayuda)}</p>` : "";
     const ancho = c.ancho || ["area", "segmentos", "chips", "check", "imagen", "zonas", "equipo"].includes(c.tipo) ? " campo-ancho" : "";
     const attrs = `data-campo="${c.id}"`;
     switch (c.tipo) {
-      case "texto": return `<label class="campo${ancho}" ${attrs}><span class="etiqueta">${etiquetaHTML(c)}</span><input id="${id}" autocomplete="off" placeholder="${esc(c.placeholder || "")}">${ayuda}</label>`;
-      case "area": return `<label class="campo${ancho}" ${attrs}><span class="etiqueta">${etiquetaHTML(c)}</span><textarea id="${id}" rows="${c.filas || 3}" maxlength="${c.max || 700}" placeholder="${esc(c.placeholder || "")}"></textarea>${ayuda}</label>`;
+      case "texto": return `<div class="campo${ancho}" ${attrs}><label class="etiqueta" for="${id}">${etiquetaHTML(c)}</label><input id="${id}" autocomplete="off" placeholder="${esc(c.placeholder || "")}">${slotFrases(c)}${ayuda}</div>`;
+      case "area": return `<div class="campo${ancho}" ${attrs}><label class="etiqueta" for="${id}">${etiquetaHTML(c)}</label><textarea id="${id}" rows="${c.filas || 3}" maxlength="${c.max || 700}" placeholder="${esc(c.placeholder || "")}"></textarea>${slotFrases(c)}${ayuda}</div>`;
       case "fecha": case "fechahora": case "hora": case "numero": {
         const tipo = { fecha: "date", fechahora: "datetime-local", hora: "time", numero: "number" }[c.tipo];
         const extra = c.tipo === "numero" ? ` inputmode="decimal" step="${c.paso || "any"}" ${c.min != null ? `min="${c.min}"` : ""} ${c.maxv != null ? `max="${c.maxv}"` : ""}` : "";
         return `<label class="campo${ancho}" ${attrs}><span class="etiqueta">${etiquetaHTML(c)}</span><input id="${id}" type="${tipo}"${extra} placeholder="${esc(c.placeholder || "")}">${ayuda}</label>`;
       }
-      case "select": return `<label class="campo${ancho}" ${attrs}><span class="etiqueta">${etiquetaHTML(c)}</span><select id="${id}">${c.valor == null ? `<option value="" selected>${esc(c.placeholder || "Selecciona…")}</option>` : ""}${c.opciones.map((o) => `<option>${esc(o)}</option>`).join("")}</select>${ayuda}</label>`;
+      case "select": return `<div class="campo${ancho}" ${attrs}><label class="etiqueta" for="${id}">${etiquetaHTML(c)}</label><select id="${id}"${c.otro ? " data-otro" : ""}>${c.valor == null ? `<option value="" selected>${esc(c.placeholder || "Selecciona…")}</option>` : ""}${c.opciones.map((o) => `<option>${esc(o)}</option>`).join("")}${c.otro ? `<option value="${OTRO}">Otro (escribir)…</option>` : ""}</select>${c.otro ? `<input id="${id}-otro" class="otro-texto" autocomplete="off" placeholder="${esc(c.placeholderOtro || "Escríbelo")}" aria-label="${esc(c.etiqueta)} (escrito a mano)" hidden>` : ""}${ayuda}</div>`;
       case "segmentos": return `<div class="campo${ancho}" ${attrs}><span class="etiqueta" id="lbl-${id}">${etiquetaHTML(c)}</span>
         <div class="segmentos seg-texto" role="radiogroup" aria-labelledby="lbl-${id}" style="grid-template-columns:repeat(${Math.min(c.opciones.length, c.columnas || 4)},minmax(0,1fr))">
         ${c.opciones.map((o, i) => `<label><input type="radio" name="${c.id}" id="${id}-${i}" value="${esc(o)}"><span>${esc(o)}</span></label>`).join("")}</div>${ayuda}</div>`;
@@ -134,6 +139,7 @@
         case "imagen": v[c.id] = imagenes[c.id] || ""; break;
         case "zonas": case "equipo": v[c.id] = (listas[c.id] || []).map((x) => ({ ...x })); break;
         case "calculado": break;
+        case "select": v[c.id] = !el ? "" : el.value === OTRO ? ($(`#f-${c.id}-otro`).value || "").trim() : el.value; break;
         default: v[c.id] = el ? el.value.trim() : "";
       }
     });
@@ -149,6 +155,18 @@
       case "check": el.checked = !!val; break;
       case "zonas": case "equipo": listas[c.id] = (val || []).map((x) => ({ ...x })); pintarLista(c.id); break;
       case "imagen": case "calculado": break;
+      case "select":
+        if (!el) break;
+        if (c.otro) {
+          const libre = !!val && !c.opciones.includes(val);
+          el.value = libre ? OTRO : (val ?? (c.valor == null ? "" : c.valor));
+          if (el.selectedIndex < 0) el.value = "";
+          const o = $(`#f-${c.id}-otro`); o.value = libre ? val : ""; o.hidden = !libre;
+        } else el.value = val ?? "";
+        break;
+      case "fecha":
+        if (el && /^\+\d+d$/.test(val || "")) { const d = new Date(); d.setDate(d.getDate() + Number(val.slice(1, -1))); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); el.value = d.toISOString().slice(0, 10); break; }
+        // falls through
       default: if (el) el.value = val === "hoy" ? ahora().slice(0, 10) : val === "ahora" ? (c.tipo === "hora" ? ahora().slice(11, 16) : ahora()) : (val ?? "");
     }
   }
@@ -175,6 +193,13 @@
         }
       });
     });
+    // Frases rápidas (pueden depender de otros campos)
+    campos().filter((c) => c.frases).forEach((c) => {
+      const slot = document.querySelector(`[data-slot="${c.id}"]`); if (!slot) return;
+      const lista = frasesDe(c, v), clave = lista.join("|");
+      if (slot.dataset.clave !== clave) { slot.dataset.clave = clave; slot.innerHTML = frasesHTML(`f-${c.id}`, lista, c.modoFrases || ""); }
+    });
+    marcarFrases($("#form-servicio"));
     if (S.resumen && !conclusionEditada) $("#f-conclusion").value = S.resumen(v);
     if (S.mensajes) pintarMensajes($("#mensajes-form"), S.mensajes(v));
   }
@@ -292,6 +317,10 @@
   $("#form-servicio").addEventListener("change", (e) => {
     const fila = e.target.closest("[data-lista]");
     if (fila) { const l = listas[fila.dataset.lista][Number(fila.dataset.i)]; const k = e.target.dataset.k; l[k] = e.target.type === "checkbox" ? e.target.checked : e.target.value; if (k === "destacado") fila.classList.toggle("destacada", e.target.checked); }
+    if (e.target.matches("select[data-otro]")) {
+      const o = $(`#${e.target.id}-otro`); o.hidden = e.target.value !== OTRO;
+      if (!o.hidden) o.focus();
+    }
     if (e.target.id === "cargo-sel") { $("#cargo").hidden = e.target.value !== OTRO; if (!$("#cargo").hidden) $("#cargo").focus(); }
     actualizar();
   });
@@ -311,6 +340,28 @@
     claves: () => campos().filter((c) => c.tipo === "imagen" && !document.querySelector(`[data-campo="${c.id}"]`).hidden).map((c) => c.id),
   });
   $("#mensajes-doc").addEventListener("click", (e) => { const cp = e.target.closest(".pc-copiar"); if (cp) copiarTexto(cp.dataset.texto, cp); });
+  // ── Casos frecuentes ──
+  if (S.casos && S.casos.length) {
+    $(".intro-parte").insertAdjacentHTML("afterend", casosHTML(S.casos));
+    $(".casos").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-caso]"); if (!b) return;
+      const caso = S.casos[Number(b.dataset.caso)];
+      const conservar = new Set(S.conservar || []);
+      // Vacía (o vuelve al valor inicial) todo lo que no se conserva y aplica el caso
+      campos().forEach((c) => {
+        if (conservar.has(c.id) || c.tipo === "imagen" || c.tipo === "calculado") return;
+        const ini = c.valor !== undefined ? c.valor : c.tipo === "chips" || c.tipo === "zonas" || c.tipo === "equipo" ? [] : c.tipo === "check" ? false : "";
+        escribir(c.id, ini);
+      });
+      Object.entries(caso.valores).forEach(([k, val]) => escribir(k, val));
+      conclusionEditada = false; $$("[aria-invalid]").forEach((x) => x.removeAttribute("aria-invalid")); $("#error-form").hidden = true;
+      $$(".caso").forEach((x) => x.classList.toggle("activo", x === b));
+      $("#casos-aviso").textContent = `Aplicado: ${caso.nombre}. Revisa y cambia lo que sea distinto${caso.falta ? ` (${caso.falta})` : ""}.`;
+      actualizar();
+    });
+  }
+  activarFrases($("#form-servicio"));
+
   $("#btn-ejemplo").addEventListener("click", () => {
     Object.entries(S.ejemplo || {}).forEach(([k, val]) => escribir(k, val));
     conclusionEditada = false; $$("[aria-invalid]").forEach((x) => x.removeAttribute("aria-invalid")); $("#error-form").hidden = true;
@@ -325,6 +376,8 @@
   $("#btn-nuevo").addEventListener("click", () => {
     $("#form-servicio").reset();
     fotos.quitarTodas();
+    $$(".otro-texto").forEach((o) => { o.value = ""; o.hidden = true; });
+    $$(".caso").forEach((x) => x.classList.remove("activo")); if ($("#casos-aviso")) $("#casos-aviso").textContent = "";
     conclusionEditada = false; datos = null;
     valoresIniciales(); iniciarFacultativo(); actualizar(); irA("form");
   });

@@ -13,7 +13,16 @@ Herramientas web para el rol del Hospital Central en el servidor de FiveM **Jera
 
 Todos los documentos ocupan **una sola página**. Cada servicio tiene dos pestañas: **Documento** (formulario y generación) y **Protocolo IC** (los pasos registrados por el hospital, con cada comando `/me`, `/do`, `/e` o `/ems` listo para copiar). Los servicios que lo piden generan además el mensaje **/ems** ya relleno (anuncio de fallecimiento, aviso de salida de rescate).
 
-El portal (`index.html`) se dibuja a partir de `js/servicios.js`. Cambiar el estado de un servicio a `"activo"` lo hace aparecer como disponible.
+El portal (`index.html`) se dibuja a partir de `js/servicios.js`.
+
+### Rellenado rápido
+
+Para escribir lo menos posible durante el rol, cirugía, ginecología, búsqueda y rescate y el parte de lesiones tienen:
+
+- **Casos frecuentes:** botones que rellenan el formulario con un caso típico (bala en abdomen, rinoplastia, control de embarazo, senderista perdido, golpes en una detención…). No tocan los datos del paciente, las fechas, el equipo de rescate ni el facultativo; después solo se cambia lo que sea distinto.
+- **Frases rápidas:** debajo de las áreas de texto, botones con frases típicas. Un clic añade la frase y otro la quita; el texto sigue siendo editable.
+- **Listas en lugar de texto:** zona intervenida, diagnóstico, cambio estético, objetos extraídos y diagnóstico ginecológico se eligen de una lista, con «Otro (escribir)» para lo que no esté.
+- **Parte de lesiones:** sugerencias de descripción según el tipo de cada lesión y frases para el lugar y el relato. Cambiar el estado de un servicio a `"activo"` lo hace aparecer como disponible.
 
 ---
 
@@ -63,6 +72,7 @@ Rescate, cirugía, ginecología y forense usan el mismo motor (`js/servicio.js` 
 - **Secciones y campos**: `texto`, `area`, `fecha`, `fechahora`, `hora`, `numero`, `select`, `segmentos`, `chips`, `check`, `imagen` (se adjunta al documento: se puede elegir un archivo, arrastrarlo o **pegar un recorte** con Ctrl + V, por ejemplo el DNI capturado con Win + Shift + S; con `lateral: true` sale a la derecha del nombre y los datos, como el DNI; `lateral: { ancho, alto, textos: true }` cambia el tamaño y pone también los textos largos a su izquierda, como la ecografía), `calculado`, `zonas` (hallazgos sobre la figura corporal; con `destacar` cada hallazgo tiene una casilla, p. ej. *Lesión mortal*, y los marcados salen en rojo) y `equipo` (personal de la operación). Con `si: (v) => …` un campo o sección solo aparece cuando aplica.
 - **Documentos**: uno o varios (forense genera dos con los mismos datos). Cada documento elige sus secciones (`secciones`), oculta campos (`ocultar`), cambia títulos (`titulos`) y puede mostrar en la figura solo los hallazgos destacados (`zonas: { id: { soloDestacados, escala } }`). Si el contenido no cabe, el documento pasa a una segunda página (el PDF las mantiene separadas y el PNG las une); con `unaPagina: true` antes se dibuja algo más pequeño (hasta el 78 %) para que quepa en una. Con `agrupar: true` los datos cortos se juntan en filas de tres (los medianos ocupan dos columnas) antes de los textos largos, los textos se limitan a 6 líneas (10 el resumen) y se puede reducir hasta el 72 %; `chipsEnLinea: true` escribe las etiquetas como texto.
 - **Cadena de causas**: una sección con `cadena` muestra sus campos como a), b), c) en un recuadro, con otro campo destacado a la derecha (la manera de muerte en forense).
+- **Rellenado rápido** (`js/rapido.js`): `frases` en campos `texto` y `area` (lista o función de los valores; `modoFrases: "reemplazar"` para valores sueltos), `otro: true` en `select`, fechas relativas (`"+30d"`), `casos: [{ nombre, desc, falta, valores }]` y `conservar: [ids]` (lo que un caso no toca).
 - **Resumen automático** (`resumen(v)`), **mensajes /ems** (`mensajes(v)`), **validación extra** (`validar(v)`) y **ejemplo** (`ejemplo`, botón *Cargar ejemplo*).
 
 Reglas del protocolo que comprueba la web:
@@ -104,6 +114,7 @@ Cada página se instala como app con su propio icono y pantalla de arranque: **H
 ├── js/certificado.js          Fuentes y utilidades de dibujo + certificado del psicotécnico
 ├── js/pdf.js                  PDF de una o varias páginas sin librerías externas
 ├── js/pegar-imagen.js         Campos de imagen: archivo, recorte pegado (Ctrl + V) o arrastrado
+├── js/rapido.js               Casos frecuentes y frases rápidas
 ├── js/preguntas.js, js/evaluacion.js, js/app.js, js/admin.js   Psicotécnico
 ├── js/parte.js, js/parte-cert.js                                Parte de lesiones (y figura corporal)
 ├── tools/generar_iconos.py    Iconos y pantallas de arranque

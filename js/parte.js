@@ -1,6 +1,6 @@
 /*
  * Parte médico de lesiones — formulario, valoración automática y generación del documento.
- * Depende de: hospital.js, certificado.js (fuentes), documento.js, parte-cert.js, pdf.js, pegar-imagen.js.
+ * Depende de: hospital.js, certificado.js (fuentes), documento.js, parte-cert.js, pdf.js, pegar-imagen.js, rapido.js.
  */
 
 // Tipos de lesión y días de curación orientativos según gravedad [leve, moderada, grave]
@@ -24,6 +24,63 @@ const MECANISMOS = ["Golpes con puño", "Patadas", "Golpes con porra", "Uso de t
 const PRUEBAS = ["Radiografía", "TAC", "Ecografía", "Analítica"];
 const TRATAMIENTOS = ["Cura local", "Sutura", "Inmovilización", "Analgesia", "Antiinflamatorios", "Hielo local", "Observación", "Derivación a psicología"];
 const TRAT_MEDICO = ["Sutura", "Inmovilización"];
+// Descripciones típicas que se sugieren al escribir la descripción de cada lesión
+const DESC_LESION = {
+  "Contusión": ["Tumefacción con eritema", "Zona enrojecida y dolorosa a la palpación", "Tumefacción de 3 cm"],
+  "Hematoma": ["Hematoma violáceo de 4 cm", "Hematoma periorbitario", "Hematoma reciente, de color rojizo"],
+  "Erosión / abrasión": ["Erosión superficial de 2 cm", "Abrasión por arrastre contra el suelo", "Excoriaciones lineales"],
+  "Herida inciso-contusa": ["Herida de 2 cm de bordes irregulares", "Herida sangrante que precisa sutura"],
+  "Marcas de contención (esposas)": ["Surco eritematoso circular", "Marcas rojizas por presión de las esposas", "Surco con pequeña erosión"],
+  "Esguince": ["Inflamación y dolor al movimiento", "Limitación de la movilidad"],
+  "Luxación": ["Deformidad e impotencia funcional", "Reducida en urgencias"],
+  "Fractura": ["Deformidad y dolor intenso", "Confirmada por radiografía"],
+  "Quemadura": ["Quemadura de primer grado", "Quemadura de segundo grado con ampollas"],
+  "Lesión por táser": ["Dos puntos de impacto de los dardos", "Puntos de impacto con eritema alrededor"],
+  "Herida por arma de fuego": ["Orificio de entrada de 1 cm", "Orificio de entrada y de salida", "Herida en sedal"],
+  "Traumatismo craneoencefálico": ["Pérdida de conocimiento breve", "Mareo y cefalea tras el golpe"],
+  "Otra": [],
+};
+const FRASES_RELATO = [
+  "Fue reducido contra el suelo sin oponer resistencia.", "Le golpearon cuando ya estaba esposado.", "Le apretaron demasiado las esposas y se quejó del dolor.",
+  "Le dispararon con el táser sin motivo aparente.", "Le golpearon con la porra.", "Le insultaron y le amenazaron.", "No le dijeron el motivo de la detención.",
+  "Le agredieron varias personas en la calle.", "Perdió el conocimiento unos segundos.",
+];
+const FRASES_LUGAR = ["Comisaría de Mission Row", "Comisaría de Vespucci", "Comisaría de Sandy Shores", "Comisaría de Paleto Bay", "Legion Square", "Vía pública", "Su domicilio"];
+// Casos frecuentes: rellenan hechos, lesiones, tratamiento y estado psicológico (no tocan paciente, fechas ni facultativo)
+const CASOS_PARTE = [
+  { nombre: "Golpes en una detención", desc: "Puñetazos, reducción y esposas apretadas",
+    agresor: "agente", mecanismos: ["Golpes con puño", "Reducción contra el suelo", "Esposado con fuerza excesiva"],
+    lesiones: [{ zona: "pomulo_d", tipo: "Contusión", gravedad: 1, desc: "Tumefacción con eritema" }, { zona: "rodilla_d", tipo: "Erosión / abrasión", gravedad: 0, desc: "Abrasión por arrastre contra el suelo" },
+      { zona: "muneca_d", tipo: "Marcas de contención (esposas)", gravedad: 0, desc: "Surco eritematoso circular" }, { zona: "muneca_i", tipo: "Marcas de contención (esposas)", gravedad: 0, desc: "" }],
+    pruebas: ["Radiografía"], trat: ["Cura local", "Analgesia", "Hielo local"], sintomas: ["Ansiedad", "Miedo a la autoridad", "Humillación / vergüenza"], intensidad: "moderada", seguimiento: true,
+    relato: "Fue reducido contra el suelo sin oponer resistencia. Le golpearon cuando ya estaba esposado." },
+  { nombre: "Uso de táser", desc: "Dardos en la espalda y caída al suelo",
+    agresor: "agente", mecanismos: ["Uso de táser", "Empujón / caída"],
+    lesiones: [{ zona: "espalda", tipo: "Lesión por táser", gravedad: 0, desc: "Dos puntos de impacto de los dardos" }, { zona: "codo_d", tipo: "Contusión", gravedad: 0, desc: "Zona enrojecida y dolorosa a la palpación" }],
+    pruebas: [], trat: ["Cura local", "Observación"], sintomas: ["Ansiedad", "Miedo a la autoridad"], intensidad: "leve", seguimiento: false,
+    relato: "Le dispararon con el táser sin motivo aparente." },
+  { nombre: "Esposas apretadas", desc: "Marcas en ambas muñecas",
+    agresor: "agente", mecanismos: ["Esposado con fuerza excesiva"],
+    lesiones: [{ zona: "muneca_d", tipo: "Marcas de contención (esposas)", gravedad: 1, desc: "Surco con pequeña erosión" }, { zona: "muneca_i", tipo: "Marcas de contención (esposas)", gravedad: 0, desc: "Marcas rojizas por presión de las esposas" }],
+    pruebas: [], trat: ["Cura local", "Hielo local"], sintomas: ["Humillación / vergüenza"], intensidad: "leve", seguimiento: false,
+    relato: "Le apretaron demasiado las esposas y se quejó del dolor." },
+  { nombre: "Golpes con porra", desc: "Hematomas en brazo y costado",
+    agresor: "agente", mecanismos: ["Golpes con porra"],
+    lesiones: [{ zona: "brazo_i", tipo: "Hematoma", gravedad: 1, desc: "Hematoma violáceo de 4 cm" }, { zona: "costillas_i", tipo: "Contusión", gravedad: 1, desc: "Zona enrojecida y dolorosa a la palpación" }],
+    pruebas: ["Radiografía"], trat: ["Analgesia", "Antiinflamatorios", "Hielo local"], sintomas: ["Ansiedad", "Miedo a la autoridad", "Insomnio"], intensidad: "moderada", seguimiento: true,
+    relato: "Le golpearon con la porra." },
+  { nombre: "Pelea en la calle", desc: "Agresión de civiles: puñetazos y patadas",
+    agresor: "civil", mecanismos: ["Golpes con puño", "Patadas"],
+    lesiones: [{ zona: "ojo_i", tipo: "Hematoma", gravedad: 0, desc: "Hematoma periorbitario" }, { zona: "boca", tipo: "Herida inciso-contusa", gravedad: 0, desc: "Herida de 2 cm de bordes irregulares" },
+      { zona: "costillas_d", tipo: "Contusión", gravedad: 1, desc: "Tumefacción con eritema" }],
+    pruebas: ["Radiografía"], trat: ["Cura local", "Analgesia"], sintomas: ["Ansiedad", "Hipervigilancia"], intensidad: "leve", seguimiento: false,
+    relato: "Le agredieron varias personas en la calle." },
+  { nombre: "Herida de bala", desc: "Disparo en una pierna",
+    agresor: "desconocido", mecanismos: ["Disparo"],
+    lesiones: [{ zona: "muslo_d", tipo: "Herida por arma de fuego", gravedad: 1, desc: "Orificio de entrada y de salida" }],
+    pruebas: ["Radiografía", "Analítica"], trat: ["Sutura", "Analgesia"], sintomas: ["Ansiedad", "Revive el suceso", "Insomnio"], intensidad: "moderada", seguimiento: true,
+    relato: "" },
+];
 const SINTOMAS = ["Ansiedad", "Miedo a la autoridad", "Insomnio", "Llanto / labilidad emocional", "Humillación / vergüenza", "Hipervigilancia", "Revive el suceso", "Aislamiento social", "Irritabilidad"];
 
 (() => {
@@ -67,7 +124,7 @@ const SINTOMAS = ["Ansiedad", "Miedo a la autoridad", "Insomnio", "Llanto / labi
         <select class="l-zona" aria-label="Zona de la lesión ${i + 1}">${opcionesZona()}</select>
         <select class="l-tipo" aria-label="Tipo de la lesión ${i + 1}">${opcionesTipo()}</select>
         <select class="l-grav" aria-label="Gravedad de la lesión ${i + 1}">${GRAVEDADES.map((g, k) => `<option value="${k}">${g}</option>`).join("")}</select>
-        <input class="l-desc" placeholder="Descripción (opcional): tamaño, color, aspecto…" aria-label="Descripción de la lesión ${i + 1}" maxlength="110">
+        <input class="l-desc" placeholder="Descripción (opcional): elige una sugerencia o escribe" aria-label="Descripción de la lesión ${i + 1}" maxlength="110">
         <button type="button" class="btn-quitar" aria-label="Quitar lesión ${i + 1}" title="Quitar">✕</button>
       </div>`).join("");
     $$("#lista-lesiones .lesion").forEach((row, i) => {
@@ -76,11 +133,18 @@ const SINTOMAS = ["Ansiedad", "Miedo a la autoridad", "Insomnio", "Llanto / labi
       if (l.tipo) row.querySelector(".l-tipo").value = l.tipo;
       row.querySelector(".l-grav").value = String(l.gravedad);
       row.querySelector(".l-desc").value = l.desc || "";
+      listaDesc(row, l.tipo);
     });
     $("#btn-anadir").disabled = lesiones.length >= 8;
     $("#ayuda-lesiones").textContent = lesiones.length
       ? `${lesiones.length} de 8 lesiones. Se numeran igual en la figura del parte.`
       : "Sin lesiones físicas registradas. Si solo hay daño psicológico, déjalo vacío.";
+  }
+  // Sugerencias de descripción según el tipo de lesión (datalist)
+  function listaDesc(row, tipo) {
+    const k = Object.keys(TIPOS_LESION).indexOf(tipo);
+    const inp = row.querySelector(".l-desc");
+    if (k >= 0 && (DESC_LESION[tipo] || []).length) inp.setAttribute("list", `dl-lesion-${k}`); else inp.removeAttribute("list");
   }
   function anadirLesion(l = { zona: "", tipo: "", gravedad: 0, desc: "" }) { lesiones.push(l); pintarLesiones(); recalcular(); }
 
@@ -230,7 +294,26 @@ const SINTOMAS = ["Ansiedad", "Miedo a la autoridad", "Insomnio", "Llanto / labi
     editado = { dias: false, impeditivos: false, pronostico: false, juicio: false };
     $$("[aria-invalid]").forEach((el) => el.removeAttribute("aria-invalid"));
     $("#error-parte").hidden = true;
-    recalcular();
+    recalcular(); marcarFrases($("#form-parte"));
+  }
+
+  function aplicarCaso(i) {
+    const c = CASOS_PARTE[i];
+    $(`input[name="agresor"][value="${c.agresor}"]`).checked = true; alternarAgresor();
+    $$('input[name="mecanismo"]').forEach((x) => (x.checked = c.mecanismos.includes(x.value)));
+    $$('input[name="prueba"]').forEach((x) => (x.checked = c.pruebas.includes(x.value)));
+    $$('input[name="trat"]').forEach((x) => (x.checked = c.trat.includes(x.value) || (c.seguimiento && x.value === "Derivación a psicología")));
+    $$('input[name="sintoma"]').forEach((x) => (x.checked = c.sintomas.includes(x.value)));
+    $(`#int-${c.intensidad}`).checked = true; $("#seguimiento").checked = !!c.seguimiento;
+    $("#relato").value = c.relato || "";
+    $("#secuelas").value = "Sin secuelas previsibles";
+    lesiones = c.lesiones.map((l) => ({ ...l }));
+    editado = { dias: false, impeditivos: false, pronostico: false, juicio: false };
+    $$("[aria-invalid]").forEach((el) => el.removeAttribute("aria-invalid"));
+    $("#error-parte").hidden = true;
+    pintarLesiones(); recalcular(); marcarFrases($("#form-parte"));
+    $$(".caso").forEach((x, k) => x.classList.toggle("activo", k === i));
+    $("#casos-aviso").textContent = `Aplicado: ${c.nombre}. Revisa las zonas (el lado), la gravedad y el relato, y cambia lo que sea distinto.`;
   }
 
   function alternarAgresor() {
@@ -309,6 +392,14 @@ const SINTOMAS = ["Ansiedad", "Miedo a la autoridad", "Insomnio", "Llanto / labi
   // ── Arranque ──
   $("#campo-dni .ayuda").insertAdjacentHTML("beforebegin", campoImagenHTML("dni", "dni", "DNI del paciente"));
   const fotos = activarImagenes({ raiz: $("#form-parte"), activo: () => !$("#vista-form").hidden, claves: () => ["dni"] });
+  // Rellenado rápido (js/rapido.js)
+  $(".intro-parte").insertAdjacentHTML("afterend", casosHTML(CASOS_PARTE));
+  $(".casos").addEventListener("click", (e) => { const b = e.target.closest("[data-caso]"); if (b) aplicarCaso(Number(b.dataset.caso)); });
+  $("#frases-relato").innerHTML = frasesHTML("relato", FRASES_RELATO);
+  $("#frases-lugar").innerHTML = frasesHTML("lugar", FRASES_LUGAR, "reemplazar");
+  document.body.insertAdjacentHTML("beforeend", Object.keys(TIPOS_LESION).map((t, k) =>
+    `<datalist id="dl-lesion-${k}">${(DESC_LESION[t] || []).map((d) => `<option value="${esc(d)}">`).join("")}</datalist>`).join(""));
+  activarFrases($("#form-parte"));
   chips("#chips-mecanismo", "mecanismo", MECANISMOS);
   chips("#chips-prueba", "prueba", PRUEBAS);
   chips("#chips-trat", "trat", TRATAMIENTOS);
@@ -325,7 +416,7 @@ const SINTOMAS = ["Ansiedad", "Miedo a la autoridad", "Insomnio", "Llanto / labi
     const row = e.target.closest(".lesion"); if (!row) return;
     const l = lesiones[Number(row.dataset.i)];
     if (e.target.matches(".l-zona")) l.zona = e.target.value;
-    if (e.target.matches(".l-tipo")) l.tipo = e.target.value;
+    if (e.target.matches(".l-tipo")) { l.tipo = e.target.value; listaDesc(row, l.tipo); }
     if (e.target.matches(".l-grav")) l.gravedad = Number(e.target.value);
     recalcular();
   });
@@ -354,6 +445,7 @@ const SINTOMAS = ["Ansiedad", "Miedo a la autoridad", "Insomnio", "Llanto / labi
   $("#btn-nuevo").addEventListener("click", () => {
     $("#form-parte").reset();
     fotos.quitarTodas();
+    $$(".caso").forEach((x) => x.classList.remove("activo")); $("#casos-aviso").textContent = "";
     $("#fecha-asistencia").value = ahoraLocal();
     iniciarMedico();
     lesiones = [{ zona: "", tipo: "", gravedad: 0, desc: "" }];
