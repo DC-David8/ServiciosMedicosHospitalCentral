@@ -43,7 +43,15 @@ async function dibujarServicio(servicio, docDef, v, recursos) {
 
   const secciones = servicio.secciones.filter((s) => (!docDef.secciones || docDef.secciones.includes(s.id)) && (!s.si || s.si(v)));
   for (const s of secciones) {
-    const campos = s.campos.filter((c) => c.enDoc !== false && (!docDef.ocultar || !docDef.ocultar.includes(c.id)) && campoVisible(c, v));
+    let campos = s.campos.filter((c) => c.enDoc !== false && (!docDef.ocultar || !docDef.ocultar.includes(c.id)) && campoVisible(c, v));
+    // Cadena de causas (a → b → c) en un recuadro, con un dato destacado a la derecha (p. ej. manera de muerte)
+    let cadena = null;
+    if (s.cadena) {
+      const filas = s.cadena.campos.map((id, i) => ({ c: campos.find((c) => c.id === id), et: s.cadena.etiquetas[i] })).filter((f) => f.c && textoCampo(f.c, v)).map((f) => ({ ...f, t: textoCampo(f.c, v) }));
+      const lc = campos.find((c) => c.id === s.cadena.lateral);
+      if (filas.length) cadena = { tipo: "cadena", filas, lateral: lc && textoCampo(lc, v) ? { c: lc, t: textoCampo(lc, v) } : null };
+      if (cadena) campos = campos.filter((c) => !s.cadena.campos.includes(c.id) && c.id !== s.cadena.lateral);
+    }
     const contenido = [];
     let fila = [];
     const cerrarFila = () => { if (fila.length) { contenido.push({ tipo: "fila", campos: fila }); fila = []; } };
@@ -59,22 +67,31 @@ async function dibujarServicio(servicio, docDef, v, recursos) {
         else ficha.datos.push({ c, t });
         continue;
       }
-      if (c.tipo === "zonas") { cerrarFila(); const l = (v[c.id] || []).filter((z) => z.zona && z.tipo); if (l.length) contenido.push({ tipo: "zonas", c, lista: l }); continue; }
+      if (c.tipo === "zonas") {
+        cerrarFila();
+        const opt = (docDef.zonas || {})[c.id] || {};
+        let l = (v[c.id] || []).filter((z) => z.zona && z.tipo);
+        if (opt.soloDestacados) l = l.filter((z) => z.destacado);
+        if (l.length) contenido.push({ tipo: "zonas", c, lista: l, opt });
+        continue;
+      }
       if (c.tipo === "equipo") { cerrarFila(); const l = (v[c.id] || []).filter((m) => m.nombre); if (l.length) contenido.push({ tipo: "equipo", c, lista: l }); continue; }
       if (c.tipo === "imagen") { cerrarFila(); if (imagenes[c.id]) contenido.push({ tipo: "imagen", c, im: imagenes[c.id] }); continue; }
       const t = textoCampo(c, v);
       if (!t) continue;
       if (c.doc === "titular") { cerrarFila(); contenido.push({ tipo: "titular", t }); continue; }
       if (c.tipo === "area") { cerrarFila(); contenido.push({ tipo: "area", c, t }); continue; }
-      if (c.tipo === "chips") { cerrarFila(); contenido.push({ tipo: "chips", c, lista: v[c.id] }); continue; }
+      if (c.tipo === "chips" && !docDef.chipsEnLinea) { cerrarFila(); contenido.push({ tipo: "chips", c, lista: v[c.id] }); continue; }
       if (t.length > 34) { cerrarFila(); contenido.push({ tipo: "ancho", c, t }); continue; }
       fila.push({ c, t }); if (fila.length === 3) cerrarFila();
     }
     cerrarFila();
     if (ficha) contenido.unshift(ficha);
+    if (cadena) contenido.push(cadena);
     if (!contenido.length) continue;
 
-    anadir({ alto: 58, titulo: true, dibujar: (doc, y) => doc.titulo((s.tituloDoc || s.titulo).toUpperCase(), y + 30) });
+    const tituloSec = (docDef.titulos && docDef.titulos[s.id]) || s.tituloDoc || s.titulo;
+    anadir({ alto: 58, titulo: true, dibujar: (doc, y) => doc.titulo(tituloSec.toUpperCase(), y + 30) });
     for (const k of contenido) {
       if (k.tipo === "ficha") {
         const esc = Math.min(300 / k.im.width, 176 / k.im.height, 2);
@@ -88,6 +105,27 @@ async function dibujarServicio(servicio, docDef, v, recursos) {
           doc.texto((k.c.pieDoc || k.c.etiquetaDoc || k.c.etiqueta).toUpperCase(), ix + iw / 2, y + ih + 34, { px: 12, peso: "700", color: colores.gris, align: "center", esp: 1.5 });
           if (k.titular) doc.texto(doc.recortar(k.titular, lw, 36, PESO_TITULO, FUENTE_TITULO), M, y + 38, { px: 36, peso: PESO_TITULO, fam: FUENTE_TITULO });
           k.datos.forEach((f, i) => doc.dato(f.c.etiquetaDoc || f.c.etiqueta, f.t, M + (i % 2) * cw, y + top + 18 + Math.floor(i / 2) * 64, cw));
+        } });
+      } else if (k.tipo === "cadena") {
+        const lat = k.lateral, colW = lat ? 270 : 0, filaH = 46;
+        const alto = Math.max(22 + k.filas.length * filaH + 6, lat ? 104 : 0);
+        anadir({ alto: alto + 8, dibujar: (doc, y) => {
+          const y0 = y + 12;
+          doc.rect(M, y0, ANCHO, alto, 10, colores.suave || "#F4F6F8", colores.linea, 1.5);
+          const vx = M + 252, vw = ANCHO - 252 - colW - 30;
+          k.filas.forEach((f, i) => {
+            const fy = y0 + 22 + (alto - (28 + k.filas.length * filaH)) / 2 + i * filaH;
+            if (i) doc.linea(M + 20, fy - 8, M + ANCHO - colW - 20, fy - 8, colores.linea, 1);
+            doc.texto(`${String.fromCharCode(97 + i)})`, M + 22, fy + 22, { px: 18, peso: "700", color: colores.acento });
+            doc.texto(f.et.toUpperCase(), M + 52, fy + 21, { px: 13, peso: "700", color: colores.gris, esp: 1.5 });
+            doc.texto(doc.recortar(f.t, vw, i ? 20 : 22, "700"), vx, fy + 22, { px: i ? 20 : 22, peso: "700", color: i ? colores.tinta : colores.cab });
+          });
+          if (lat) {
+            const lx = M + ANCHO - colW;
+            doc.rect(lx, y0, colW, alto, 10, colores.cab, null);
+            doc.texto((lat.c.etiquetaDoc || lat.c.etiqueta).toUpperCase(), lx + colW / 2, y0 + alto / 2 - 12, { px: 13, peso: "700", color: "rgba(255,255,255,.75)", align: "center", esp: 1.8 });
+            doc.texto(doc.recortar(lat.t, colW - 30, 30, PESO_TITULO, FUENTE_TITULO), lx + colW / 2, y0 + alto / 2 + 26, { px: 30, peso: PESO_TITULO, fam: FUENTE_TITULO, color: "#FFFFFF", align: "center" });
+          }
         } });
       } else if (k.tipo === "titular") anadir({ alto: 54, dibujar: (doc, y) => doc.texto(doc.recortar(k.t, ANCHO, 36, PESO_TITULO, FUENTE_TITULO), M, y + 38, { px: 36, peso: PESO_TITULO, fam: FUENTE_TITULO }) });
       else if (k.tipo === "fila") {
@@ -138,10 +176,11 @@ async function dibujarServicio(servicio, docDef, v, recursos) {
           });
         } });
       } else if (k.tipo === "zonas") {
-        const k2 = 0.86, conDesc = k.lista.length <= 6;
+        const k2 = k.opt.escala || 0.86, conDesc = k.lista.length <= 6;
         const listaH = k.lista.reduce((s2, z) => s2 + (conDesc && z.desc ? 78 : 44), 0);
         const marca = k.c.destacar && k.lista.some((z) => z.destacado) ? k.c.destacar : null;
-        anadir({ alto: Math.max(marca ? 372 : 340, listaH + 20), dibujar: (doc, y) => dibujarZonas(doc, k.lista, y + 8, k2, conDesc, colores, marca) });
+        const figH = 340 * k2 / 0.86 + (marca && !k.opt.soloDestacados ? 32 : 0);
+        anadir({ alto: Math.max(figH, listaH + 20), dibujar: (doc, y) => dibujarZonas(doc, k.lista, y + 8, k2, conDesc, colores, marca, k.opt) });
       }
     }
   }
@@ -163,16 +202,26 @@ async function dibujarServicio(servicio, docDef, v, recursos) {
 
   // ── Paginación ──
   const INICIO1 = 292, INICIO2 = 172, LIMITE = H - 104, HUECO = 10, FIRMA = H - 262 - 18;
+  // Documentos de una sola página: si el contenido no cabe, se dibuja algo más pequeño (hasta un 78 %) antes de partirlo
+  let escala = 1;
+  const total = bloques.reduce((t, b) => t + b.alto + HUECO, 0) - HUECO;
+  if (docDef.unaPagina && INICIO1 + total > FIRMA) {
+    const e = (FIRMA - INICIO1) / total;
+    if (e >= 0.78) escala = e;
+  }
   const paginas = [[]];
   let y = INICIO1;
-  bloques.forEach((b, i) => {
-    const sig = bloques[i + 1];
-    const necesita = b.titulo && sig ? b.alto + sig.alto : b.alto;
-    if (y + necesita > LIMITE && paginas[paginas.length - 1].length) { paginas.push([]); y = INICIO2; }
-    paginas[paginas.length - 1].push({ b, y });
-    y += b.alto + HUECO;
-  });
-  if (y - HUECO > FIRMA) paginas.push([]);
+  if (escala !== 1) bloques.forEach((b) => paginas[0].push({ b, y: 0 }));
+  else {
+    bloques.forEach((b, i) => {
+      const sig = bloques[i + 1];
+      const necesita = b.titulo && sig ? b.alto + sig.alto : b.alto;
+      if (y + necesita > LIMITE && paginas[paginas.length - 1].length) { paginas.push([]); y = INICIO2; }
+      paginas[paginas.length - 1].push({ b, y });
+      y += b.alto + HUECO;
+    });
+    if (y - HUECO > FIRMA) paginas.push([]);
+  }
 
   // ── Dibujo ──
   const numero = v._numero;
@@ -182,7 +231,13 @@ async function dibujarServicio(servicio, docDef, v, recursos) {
     const doc = crearDocumento(canvas, { colores });
     if (p === 0) doc.cabecera({ logo, org: docDef.org, titulo: docDef.titulo, subtitulo: docDef.subtitulo, etiquetaNumero: docDef.etiquetaNumero || "Nº DE DOCUMENTO", numero, fecha: fechaCab });
     else doc.cabeceraCompacta({ logo, titulo: docDef.titulo, numero });
-    items.forEach(({ b, y: by }) => b.dibujar(doc, by));
+    if (escala !== 1) {
+      // Se dibuja a escala, centrado en horizontal y anclado al inicio del cuerpo
+      doc.ctx.save(); doc.ctx.translate(W / 2, INICIO1); doc.ctx.scale(escala, escala); doc.ctx.translate(-W / 2, -INICIO1);
+      let yy = INICIO1;
+      items.forEach(({ b }) => { b.dibujar(doc, yy); yy += b.alto + HUECO; });
+      doc.ctx.restore();
+    } else items.forEach(({ b, y: by }) => b.dibujar(doc, by));
     if (p === paginas.length - 1) {
       doc.firma({ firma: v._firma, nombre: v._medico, cargo: v._cargo, etiqueta: docDef.etiquetaFirma || servicio.etiquetaFirma || "FACULTATIVO RESPONSABLE", fechaEmision: v._emision, sello, nota: docDef.nota });
     }
@@ -195,17 +250,18 @@ async function dibujarServicio(servicio, docDef, v, recursos) {
  * Figura frontal y posterior con marcadores numerados y lista de hallazgos a la derecha.
  * marca = { etiqueta, doc } resalta en rojo los hallazgos con «destacado» (p. ej. lesiones mortales).
  */
-function dibujarZonas(doc, lista, fy, k, conDesc, colores, marca) {
+function dibujarZonas(doc, lista, fy, k, conDesc, colores, marca, opt = {}) {
   const { ctx, M, W } = doc;
   const ROJO = colores.destacado || "#B3261E";
   const fxF = M + 10, fxP = M + 170;
   dibujarFigura(ctx, fxF, fy, k, "F"); dibujarFigura(ctx, fxP, fy, k, "P");
-  doc.texto("FRONTAL", fxF + 75 * k, fy + 318, { px: 13, peso: "700", color: colores.gris, align: "center", esp: 2 });
-  doc.texto("POSTERIOR", fxP + 75 * k, fy + 318, { px: 13, peso: "700", color: colores.gris, align: "center", esp: 2 });
+  const pieY = fy + 318 * k / 0.86;
+  doc.texto("FRONTAL", fxF + 75 * k, pieY, { px: 13, peso: "700", color: colores.gris, align: "center", esp: 2 });
+  doc.texto("POSTERIOR", fxP + 75 * k, pieY, { px: 13, peso: "700", color: colores.gris, align: "center", esp: 2 });
   const marcado = (l) => !!(marca && l.destacado);
-  // Leyenda
-  if (marca) {
-    const ly0 = fy + 348;
+  // Leyenda (no hace falta si solo se muestran las destacadas)
+  if (marca && !opt.soloDestacados) {
+    const ly0 = pieY + 30;
     ctx.beginPath(); ctx.arc(M + 18, ly0 - 5, 9, 0, Math.PI * 2); ctx.fillStyle = ROJO; ctx.fill();
     ctx.beginPath(); ctx.arc(M + 18, ly0 - 5, 13, 0, Math.PI * 2); ctx.lineWidth = 2; ctx.strokeStyle = ROJO; ctx.stroke();
     doc.texto(marca.etiqueta, M + 38, ly0, { px: 15, peso: "700", color: ROJO });

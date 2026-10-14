@@ -27,7 +27,11 @@ window.SERVICIO = (() => {
         id: "defuncion", nombre: "Certificado de defunción", titulo: "CERTIFICADO DE DEFUNCIÓN",
         org: "HOSPITAL CENTRAL · MEDICINA FORENSE", subtitulo: "Acta oficial de fallecimiento",
         prefijo: "DEF", etiquetaNumero: "Nº DE ACTA", archivo: "Certificado_defuncion",
-        secciones: ["fallecido", "constatacion", "causa", "destino"], ocultar: ["rcp"], resumen: false,
+        secciones: ["fallecido", "constatacion", "externo", "causa", "destino"], resumen: false, unaPagina: true,
+        // El certificado solo muestra las lesiones mortales, sobre una figura más pequeña
+        ocultar: ["temperatura", "muestras_sup", "ext_desc"],
+        titulos: { externo: "Lesiones mortales", constatacion: "Constatación de la muerte" },
+        zonas: { hallazgos_ext: { soloDestacados: true, escala: 0.74 } },
         fechaCabecera: (v) => fechaHoraTexto(v.fecha_muerte),
         tituloDeclaracion: "Certificación",
         declaracion: (v) => {
@@ -40,6 +44,9 @@ window.SERVICIO = (() => {
         id: "autopsia", nombre: "Informe de autopsia", titulo: "INFORME DE AUTOPSIA",
         org: "HOSPITAL CENTRAL · MEDICINA FORENSE", subtitulo: "Examen externo, interno y conclusiones",
         prefijo: "AUT", etiquetaNumero: "Nº DE INFORME", archivo: "Informe_autopsia",
+        // El informe se centra en la autopsia: la reanimación y el destino del cuerpo van en el certificado
+        secciones: ["fallecido", "constatacion", "externo", "interno", "causa"], ocultar: ["rcp"],
+        chipsEnLinea: true, unaPagina: true,
         fechaCabecera: (v) => fechaHoraTexto(v.fecha_muerte),
         nota: "Documento médico-legal reservado. Copia oficial archivada en el Hospital Central.",
       },
@@ -70,7 +77,9 @@ window.SERVICIO = (() => {
         { id: "muestras", tipo: "chips", etiqueta: "Muestras para análisis", opciones: ["Sangre", "Tejidos", "Contenido gástrico", "Toxicología"] },
         { id: "cierre", tipo: "check", etiqueta: "Cierre de incisiones con sutura continua e higiene del cuerpo", etiquetaDoc: "Cierre e higiene", textoSi: "Realizados", valor: true },
       ] },
-      { id: "causa", titulo: "Causa de la muerte", campos: [
+      { id: "causa", titulo: "Causa de la muerte",
+        cadena: { campos: ["causa_inmediata", "causa_intermedia", "causa_fundamental"], etiquetas: ["Causa inmediata", "Causa intermedia", "Causa fundamental"], lateral: "manera" },
+        campos: [
         { id: "causa_inmediata", tipo: "texto", etiqueta: "Causa inmediata", req: true, ancho: true, placeholder: "Ej.: shock hipovolémico" },
         { id: "causa_intermedia", tipo: "texto", etiqueta: "Causa intermedia", opcional: true, ancho: true, placeholder: "Ej.: hemorragia interna masiva" },
         { id: "causa_fundamental", tipo: "texto", etiqueta: "Causa fundamental", opcional: true, ancho: true, placeholder: "Ej.: heridas por arma de fuego en tórax" },
@@ -87,7 +96,7 @@ window.SERVICIO = (() => {
       const ext = (v.hallazgos_ext || []).filter((z) => z.zona && z.tipo);
       f.push(`Se realiza autopsia a ${a.D} ${v.nombre || "—"}${v.identidad ? ", identificad" + a.o + " mediante su DNI" : ""}.`);
       if (v.temperatura) f.push(`Temperatura corporal de ${v.temperatura} °C a la exploración.`);
-      if (ext.length) f.push(`En el examen externo se objetivan ${ext.length === 1 ? "un hallazgo" : `${ext.length} hallazgos`}: ${unirEs(ext.slice(0, 5).map((z) => `${z.tipo.toLowerCase()} en ${zonaPorId(z.zona).nombre.toLowerCase()}`))}.`);
+      if (ext.length) f.push(`En el examen externo se objetivan ${ext.length === 1 ? "un hallazgo" : `${ext.length} hallazgos`}, señalados en la figura.`);
       const mort = (v.hallazgos_ext || []).map((z, i) => ({ ...z, n: i + 1 })).filter((z) => z.zona && z.tipo && z.destacado);
       if (mort.length) f.push(`${mort.length === 1 ? "Se considera mortal la lesión" : "Se consideran mortales las lesiones"} ${unirEs(mort.map((z) => `nº ${z.n} (${z.tipo.toLowerCase()} en ${zonaPorId(z.zona).nombre.toLowerCase()})`))}.`);
       if (v.hallazgos_int) f.push(`Examen interno: ${minus(v.hallazgos_int).replace(/\.$/, "")}.`);
